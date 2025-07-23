@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  sortOrder Int       @default(0)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+}
+
+model Product {
+  id              String         @id @default(cuid())
+  name            String
+  description     String?
+  priceType       PriceType      // WEIGHT_BASED, PACK
+  basePrice       Int            // 重量単価商品は100g単位の価格、パック商品は固定価格
+  unit            String         // "100g" または "パック"
+  imageUrl        String?
+  isActive        Boolean        @default(true)
+  stock           Int?           // 在庫数（パック商品用）
+  // 商品オプション設定
+  hasUsageOption  Boolean        @default(false)  // 用途選択の有無
+  usageOptions    Json?          // ["焼肉用", "煮込み用", "カレー用"] などの配列
+  hasFlavorOption Boolean        @default(false)  // 味付け選択の有無
+  flavorOptions   Json?          // ["塩味", "醤油味", "味噌味"] などの配列
+  quantityMethod  QuantityMethod @default(WEIGHT) // 数量・個数指定方法
+  hasRemarks      Boolean        @default(false)  // 備考欄の有無
+  categoryId      String
+  category        Category       @relation(fields: [categoryId], references: [id])
+  orderItems      OrderItem[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  orderNumber   String      @unique
+  customerName  String
+  customerEmail String
+  customerPhone String
+  pickupDate    DateTime
+  pickupTime    String
+  totalAmount   Int
+  status        OrderStatus @default(PENDING)
+  orderItems    OrderItem[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model OrderItem {
+  id               String  @id @default(cuid())
+  quantity         Int     // 重量商品はグラム数、パック商品は個数
+  price            Int     // 商品単価
+  subtotal         Int     // 小計
+  // 選択されたオプション
+  selectedUsage    String? // 選択された用途
+  selectedFlavor   String? // 選択された味付け
+  remarks          String? // 備考
+  orderId          String
+  order            Order   @relation(fields: [orderId], references: [id])
+  productId        String
+  product          Product @relation(fields: [productId], references: [id])
+}
+
+model User {
+  id       String @id @default(cuid())
+  email    String @unique
+  password String
+  role     Role   @default(ADMIN)
+}
+
+enum PriceType {
+  WEIGHT_BASED  // 重量単価
+  PACK          // パック売り
+}
+
+enum QuantityMethod {
+  WEIGHT        // 重量指定（g単位）
+  PIECE         // 枚数指定
+  PACK          // パック指定
+  PIECE_COUNT   // 本数指定
+}
+
+enum OrderStatus {
+  PENDING     // 注文受付
+  PREPARING   // 準備中
+  READY       // 準備完了
+  COMPLETED   // 受け取り完了
+  CANCELLED   // キャンセル
+}
+
+enum Role {
+  ADMIN
+}
