@@ -42,7 +42,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
@@ -75,7 +75,7 @@ export default function LoginPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@example.com"
+                    placeholder="admin@butcher-maruko.com"
                   />
                 </div>
               </div>
@@ -115,6 +115,13 @@ export default function LoginPage() {
             </form>
           </CardContent>
         </Card>
+        
+        <div className="mt-6 text-center">
+          <p className="text-xs text-gray-500">
+            デフォルト管理者アカウント:<br />
+            admin@butcher-maruko.com / admin123
+          </p>
+        </div>
       </div>
     </div>
   )

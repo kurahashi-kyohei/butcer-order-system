@@ -19,6 +19,46 @@ async function main() {
 
   console.log('Admin user created:', admin)
 
+  // オプションを作成
+  const usageOptions = [
+    { name: '焼肉用', sortOrder: 1 },
+    { name: 'バーベキュー用', sortOrder: 2 },
+    { name: '煮込み用', sortOrder: 3 },
+    { name: 'カレー用', sortOrder: 4 },
+    { name: 'すき焼き用', sortOrder: 5 },
+    { name: 'しゃぶしゃぶ用', sortOrder: 6 }
+  ]
+
+  const createdUsageOptions = []
+  for (const optionData of usageOptions) {
+    const option = await prisma.usageOption.upsert({
+      where: { name: optionData.name },
+      update: {},
+      create: optionData
+    })
+    createdUsageOptions.push(option)
+    console.log('Usage option created:', option)
+  }
+
+  const flavorOptions = [
+    { name: 'プレーン', sortOrder: 1 },
+    { name: 'タレ漬け', sortOrder: 2 },
+    { name: '塩味', sortOrder: 3 },
+    { name: '醤油味', sortOrder: 4 },
+    { name: '味噌味', sortOrder: 5 }
+  ]
+
+  const createdFlavorOptions = []
+  for (const optionData of flavorOptions) {
+    const option = await prisma.flavorOption.upsert({
+      where: { name: optionData.name },
+      update: {},
+      create: optionData
+    })
+    createdFlavorOptions.push(option)
+    console.log('Flavor option created:', option)
+  }
+
   // カテゴリを作成
   const categories = [
     { name: '焼肉', slug: 'yakiniku', sortOrder: 1 },
@@ -44,7 +84,13 @@ async function main() {
   const yakinikuCategory = await prisma.category.findUnique({ where: { slug: 'yakiniku' } })
   const processedCategory = await prisma.category.findUnique({ where: { slug: 'processed-foods' } })
 
-  if (yakinikuCategory) {
+  // 焼肉用のオプションIDを取得
+  const yakinikuUsage = createdUsageOptions.find(opt => opt.name === '焼肉用')
+  const bbqUsage = createdUsageOptions.find(opt => opt.name === 'バーベキュー用')
+  const plainFlavor = createdFlavorOptions.find(opt => opt.name === 'プレーン')
+  const marinatedFlavor = createdFlavorOptions.find(opt => opt.name === 'タレ漬け')
+
+  if (yakinikuCategory && yakinikuUsage && bbqUsage && plainFlavor && marinatedFlavor) {
     await prisma.product.upsert({
       where: { id: 'product-1' },
       update: {},
@@ -55,10 +101,8 @@ async function main() {
         priceType: 'WEIGHT_BASED',
         basePrice: 800,
         unit: '100g',
-        hasUsageOption: true,
-        usageOptions: JSON.stringify(['焼肉用', 'バーベキュー用']),
-        hasFlavorOption: true,
-        flavorOptions: JSON.stringify(['プレーン', 'タレ漬け']),
+        usageOptionIds: `${yakinikuUsage.id},${bbqUsage.id}`,
+        flavorOptionIds: `${plainFlavor.id},${marinatedFlavor.id}`,
         quantityMethod: 'WEIGHT',
         hasRemarks: true,
         categoryId: yakinikuCategory.id

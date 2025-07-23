@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 
 const notoSansJP = Noto_Sans_JP({
@@ -12,8 +10,8 @@ const notoSansJP = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
-  title: "ブッチャー丸幸 - 精肉店注文サイト",
-  description: "新鮮で高品質な精肉をお届けします。店舗受け取り専用の注文サイトです。",
+  title: "ブッチャー丸幸",
+  description: "新鮮で高品質な精肉をお届けします。",
 };
 
 export default function RootLayout({
@@ -25,13 +23,7 @@ export default function RootLayout({
     <html lang="ja">
       <body className={`${notoSansJP.variable} font-sans antialiased`}>
         <SessionProvider>
-          <div className="min-h-screen flex flex-col">
-            <Header />
-            <main className="flex-1">
-              {children}
-            </main>
-            <Footer />
-          </div>
+          {children}
         </SessionProvider>
       </body>
     </html>

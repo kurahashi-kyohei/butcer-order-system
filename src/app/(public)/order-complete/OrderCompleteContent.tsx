@@ -35,7 +35,7 @@ interface Order {
   }>
 }
 
-export default function OrderCompletePage() {
+export function OrderCompleteContent() {
   const searchParams = useSearchParams()
   const orderNumber = searchParams.get('orderNumber')
   const [order, setOrder] = useState<Order | null>(null)
