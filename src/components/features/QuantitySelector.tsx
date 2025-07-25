@@ -7,25 +7,31 @@ import { Select } from '@/components/ui/Select'
 
 interface QuantitySelectorProps {
   priceType: 'WEIGHT_BASED' | 'PACK'
-  quantityMethod: 'WEIGHT' | 'PIECE' | 'PACK' | 'PIECE_COUNT'
+  quantityMethods: ('WEIGHT' | 'PIECE' | 'PACK' | 'PIECE_COUNT')[]
   basePrice: number
   unit: string
-  stock?: number | null
-  onQuantityChange: (quantity: number, subtotal: number) => void
+  hasStock: boolean
+  onQuantityChange: (quantity: number, subtotal: number, selectedMethod: string) => void
 }
 
 export function QuantitySelector({
   priceType,
-  quantityMethod,
+  quantityMethods,
   basePrice,
   unit,
-  stock,
+  hasStock,
   onQuantityChange
 }: QuantitySelectorProps) {
-  const [quantity, setQuantity] = useState<number>(quantityMethod === 'WEIGHT' ? 100 : 1)
+  const [selectedMethod, setSelectedMethod] = useState<string>(quantityMethods[0])
+  const [quantity, setQuantity] = useState<number>(quantityMethods[0] === 'WEIGHT' ? 100 : 1)
+  // 枚数選択時の詳細設定用の状態
+  const [pieceGrams, setPieceGrams] = useState<number>(100) // 1枚あたりのグラム数
+  const [pieceCount, setPieceCount] = useState<number>(1)   // 枚数
+  const [packCount, setPackCount] = useState<number>(1)     // パック数
 
-  const getQuantityLabel = () => {
-    switch (quantityMethod) {
+  const getQuantityLabel = (method?: string) => {
+    const targetMethod = method || selectedMethod
+    switch (targetMethod) {
       case 'WEIGHT':
         return 'グラム数'
       case 'PIECE':
@@ -39,8 +45,9 @@ export function QuantitySelector({
     }
   }
 
-  const getQuantityUnit = () => {
-    switch (quantityMethod) {
+  const getQuantityUnit = (method?: string) => {
+    const targetMethod = method || selectedMethod
+    switch (targetMethod) {
       case 'WEIGHT':
         return 'g'
       case 'PIECE':
@@ -54,40 +61,84 @@ export function QuantitySelector({
     }
   }
 
-  const calculateSubtotal = (qty: number) => {
-    if (priceType === 'WEIGHT_BASED') {
-      // 重量単価商品：100g単位の価格 × グラム数 ÷ 100
-      return Math.round((basePrice * qty) / 100)
-    } else {
-      // パック商品：固定価格 × 個数
-      return basePrice * qty
+  const getMethodDisplayName = (method: string) => {
+    switch (method) {
+      case 'WEIGHT':
+        return '重量で選ぶ'
+      case 'PIECE':
+        return '枚数で選ぶ'
+      case 'PACK':
+        return 'パック数で選ぶ'
+      case 'PIECE_COUNT':
+        return '本数で選ぶ'
+      default:
+        return '数量で選ぶ'
     }
   }
 
+  const calculateSubtotal = (qty: number, method?: string) => {
+    const targetMethod = method || selectedMethod
+    switch (targetMethod) {
+      case 'WEIGHT':
+        // 重量の場合: g × p
+        return Math.round((basePrice * qty) / 100)
+      case 'PIECE':
+        // 枚数の場合: g × 枚数 × パック数 × p
+        return Math.round((basePrice * pieceGrams * pieceCount * packCount) / 100)
+      case 'PIECE_COUNT':
+        // 本数の場合: 本数 × p
+        return basePrice * qty
+      case 'PACK':
+        // パック数の場合: p
+        return basePrice * qty
+      default:
+        return basePrice * qty
+    }
+  }
+
+  // 枚数選択時の設定変更を監視
+  useEffect(() => {
+    if (selectedMethod === 'PIECE') {
+      const totalQuantity = pieceGrams * pieceCount * packCount
+      const subtotal = calculateSubtotal(0) // 計算は内部で行う
+      onQuantityChange(totalQuantity, subtotal, selectedMethod)
+    }
+  }, [pieceGrams, pieceCount, packCount, selectedMethod])
+
   // 初期値を親コンポーネントに通知
   useEffect(() => {
-    const initialQuantity = quantityMethod === 'WEIGHT' ? 100 : 1
+    const initialQuantity = selectedMethod === 'WEIGHT' ? 100 : 
+                           selectedMethod === 'PIECE' ? pieceGrams * pieceCount * packCount : 1
     const initialSubtotal = calculateSubtotal(initialQuantity)
-    onQuantityChange(initialQuantity, initialSubtotal)
+    onQuantityChange(initialQuantity, initialSubtotal, selectedMethod)
   }, []) // 初回マウント時のみ実行
+
+  // 数量選択方法が変更されたときの処理
+  const handleMethodChange = (newMethod: string) => {
+    setSelectedMethod(newMethod)
+    const newQuantity = newMethod === 'WEIGHT' ? 100 : 1
+    setQuantity(newQuantity)
+    const subtotal = calculateSubtotal(newQuantity, newMethod)
+    onQuantityChange(newQuantity, subtotal, newMethod)
+  }
 
   const handleQuantityChange = (newQuantity: number) => {
     // 重量商品は100g単位、その他は1単位
-    const minQuantity = quantityMethod === 'WEIGHT' ? 100 : 1
+    const minQuantity = selectedMethod === 'WEIGHT' ? 100 : 1
     if (newQuantity < minQuantity) return
-    if (priceType === 'PACK' && stock && newQuantity > stock) return
+    if (!hasStock) return
 
     setQuantity(newQuantity)
     const subtotal = calculateSubtotal(newQuantity)
-    onQuantityChange(newQuantity, subtotal)
+    onQuantityChange(newQuantity, subtotal, selectedMethod)
   }
 
   const getPresetOptions = () => {
-    if (quantityMethod === 'WEIGHT') {
+    if (selectedMethod === 'WEIGHT') {
       return [100, 200, 300, 500, 1000]
-    } else if (quantityMethod === 'PIECE') {
+    } else if (selectedMethod === 'PIECE') {
       return [1, 2, 3, 5, 10]
-    } else if (quantityMethod === 'PIECE_COUNT') {
+    } else if (selectedMethod === 'PIECE_COUNT') {
       return [1, 2, 3, 4, 5]
     }
     return []
@@ -97,77 +148,201 @@ export function QuantitySelector({
 
   return (
     <div className="space-y-4">
+      {quantityMethods.length > 1 && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            購入方法を選択 <span className="text-red-500">*</span>
+          </label>
+          <Select
+            options={quantityMethods.map(method => ({
+              value: method,
+              label: getMethodDisplayName(method)
+            }))}
+            value={selectedMethod}
+            onChange={(e) => handleMethodChange(e.target.value)}
+          />
+        </div>
+      )}
+
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           {getQuantityLabel()} <span className="text-red-500">*</span>
         </label>
         
-        {presetOptions.length > 0 && (
-          <div className="mb-3">
-            <p className="text-sm text-gray-600 mb-2">よく選ばれる量：</p>
-            <div className="flex flex-wrap gap-2">
-              {presetOptions.map((preset) => (
+        {selectedMethod === 'PIECE' ? (
+          // 枚数選択時の詳細設定
+          <div className="space-y-4">
+            {/* 1枚あたりのグラム数 */}
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">1枚あたりのグラム数</label>
+              <div className="flex items-center space-x-2">
                 <Button
-                  key={preset}
                   variant="outline"
                   size="sm"
-                  onClick={() => handleQuantityChange(preset)}
-                  className={quantity === preset ? 'bg-red-50 border-red-300' : ''}
+                  onClick={() => setPieceGrams(Math.max(100, pieceGrams - 100))}
+                  disabled={pieceGrams <= 100}
                 >
-                  {preset}{getQuantityUnit()}
+                  -
                 </Button>
-              ))}
+                <div className="w-20 h-9 border border-gray-300 rounded-md flex items-center justify-center bg-gray-50">
+                  <span className="text-sm font-medium">{pieceGrams}</span>
+                </div>
+                <span className="text-sm text-gray-600">g</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPieceGrams(pieceGrams + 100)}
+                  disabled={!hasStock}
+                >
+                  +
+                </Button>
+              </div>
+            </div>
+
+            {/* 枚数 */}
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">枚数</label>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPieceCount(Math.max(1, pieceCount - 1))}
+                  disabled={pieceCount <= 1}
+                >
+                  -
+                </Button>
+                <Input
+                  type="number"
+                  value={pieceCount}
+                  onChange={(e) => setPieceCount(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-20 text-center"
+                  min={1}
+                  disabled={!hasStock}
+                />
+                <span className="text-sm text-gray-600">枚</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPieceCount(pieceCount + 1)}
+                  disabled={!hasStock}
+                >
+                  +
+                </Button>
+              </div>
+            </div>
+
+            {/* パック数 */}
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">パック数</label>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPackCount(Math.max(1, packCount - 1))}
+                  disabled={packCount <= 1}
+                >
+                  -
+                </Button>
+                <Input
+                  type="number"
+                  value={packCount}
+                  onChange={(e) => setPackCount(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-20 text-center"
+                  min={1}
+                  disabled={!hasStock}
+                />
+                <span className="text-sm text-gray-600">パック</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPackCount(packCount + 1)}
+                  disabled={!hasStock}
+                >
+                  +
+                </Button>
+              </div>
             </div>
           </div>
+        ) : (
+          // 従来の数量選択UI
+          <>
+            {presetOptions.length > 0 && (
+              <div className="mb-3">
+                <p className="text-sm text-gray-600 mb-2">よく選ばれる量：</p>
+                <div className="flex flex-wrap gap-2">
+                  {presetOptions.map((preset) => (
+                    <Button
+                      key={preset}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuantityChange(preset)}
+                      className={quantity === preset ? 'bg-red-50 border-red-300' : ''}
+                    >
+                      {preset}{getQuantityUnit()}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleQuantityChange(quantity - (selectedMethod === 'WEIGHT' ? 100 : 1))}
+                disabled={quantity <= (selectedMethod === 'WEIGHT' ? 100 : 1)}
+              >
+                -
+              </Button>
+              
+              <Input
+                type="number"
+                value={quantity}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 0
+                  handleQuantityChange(value)
+                }}
+                className="w-24 text-center"
+                min={selectedMethod === 'WEIGHT' ? 100 : 1}
+                step={selectedMethod === 'WEIGHT' ? 100 : 1}
+                disabled={!hasStock}
+              />
+              
+              <span className="text-sm text-gray-600">
+                {getQuantityUnit()}
+              </span>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleQuantityChange(quantity + (selectedMethod === 'WEIGHT' ? 100 : 1))}
+                disabled={!hasStock}
+              >
+                +
+              </Button>
+            </div>
+          </>
         )}
 
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleQuantityChange(quantity - (quantityMethod === 'WEIGHT' ? 100 : 1))}
-            disabled={quantity <= (quantityMethod === 'WEIGHT' ? 100 : 1)}
-          >
-            -
-          </Button>
-          
-          <Input
-            type="number"
-            value={quantity}
-            onChange={(e) => {
-              const value = parseInt(e.target.value) || 0
-              handleQuantityChange(value)
-            }}
-            className="w-24 text-center"
-            min={quantityMethod === 'WEIGHT' ? 100 : 1}
-            step={quantityMethod === 'WEIGHT' ? 100 : 1}
-            max={priceType === 'PACK' && stock ? stock : undefined}
-          />
-          
-          <span className="text-sm text-gray-600">
-            {getQuantityUnit()}
-          </span>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleQuantityChange(quantity + (quantityMethod === 'WEIGHT' ? 100 : 1))}
-            disabled={priceType === 'PACK' && stock ? quantity >= stock : false}
-          >
-            +
-          </Button>
-        </div>
-
-        {priceType === 'PACK' && stock && (
-          <p className="text-sm text-gray-500 mt-1">
-            在庫: {stock}パック
+        {!hasStock && (
+          <p className="text-sm text-red-500 mt-1">
+            在庫切れ
           </p>
         )}
       </div>
 
       <div className="bg-gray-50 p-4 rounded-lg">
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">小計:</span>
+          <span className="text-sm text-gray-600">
+            {selectedMethod === 'PIECE' ? 
+              `${pieceGrams}g × ${pieceCount}枚 × ${packCount}パック × ${basePrice}円` : 
+            selectedMethod === 'WEIGHT' ?
+              `${quantity}g × ${basePrice}円` :
+            selectedMethod === 'PACK' ?
+              `${unit} × ${quantity}パック × ${basePrice}円` :
+              '小計:'
+            }
+          </span>
           <span className="text-lg font-bold text-red-600">
             {new Intl.NumberFormat('ja-JP', {
               style: 'currency',

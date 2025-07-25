@@ -15,16 +15,19 @@ export default async function AdminProductsPage() {
   const [products, categories] = await Promise.all([
     prisma.product.findMany({
       include: {
-        category: {
-          select: {
-            id: true,
-            name: true,
-            slug: true
+        categories: {
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+                slug: true
+              }
+            }
           }
         }
       },
       orderBy: [
-        { category: { sortOrder: 'asc' } },
         { name: 'asc' }
       ]
     }),
@@ -32,6 +35,12 @@ export default async function AdminProductsPage() {
       orderBy: { sortOrder: 'asc' }
     })
   ])
+
+  // 商品データを変換
+  const transformedProducts = products.map(product => ({
+    ...product,
+    categories: product.categories.map(pc => pc.category)
+  }))
 
   return (
     <>
@@ -44,7 +53,7 @@ export default async function AdminProductsPage() {
         </div>
 
         <ProductsTable 
-          products={products}
+          products={transformedProducts}
           categories={categories}
         />
       </main>

@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { ProductEditModal } from '@/components/admin/ProductEditModal'
 
 interface Product {
   id: string
@@ -13,13 +14,12 @@ interface Product {
   unit: string
   imageUrl?: string | null
   isActive: boolean
-  stock?: number | null
-  categoryId: string
-  category: {
+  hasStock: boolean
+  categories: {
     id: string
     name: string
     slug: string
-  }
+  }[]
 }
 
 interface Category {
@@ -36,7 +36,8 @@ interface ProductsTableProps {
 }
 
 export function ProductsTable({ products, categories }: ProductsTableProps) {
-  const [updatingProduct, setUpdatingProduct] = useState<string | null>(null)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('ja-JP', {
@@ -45,29 +46,18 @@ export function ProductsTable({ products, categories }: ProductsTableProps) {
     }).format(price)
   }
 
-  const handleToggleActive = async (productId: string, currentStatus: boolean) => {
-    setUpdatingProduct(productId)
-    
-    try {
-      const response = await fetch(`/api/admin/products/${productId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ isActive: !currentStatus }),
-      })
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product)
+    setIsModalOpen(true)
+  }
 
-      if (response.ok) {
-        window.location.reload()
-      } else {
-        alert('商品の更新に失敗しました')
-      }
-    } catch (error) {
-      console.error('Product update error:', error)
-      alert('商品の更新に失敗しました')
-    } finally {
-      setUpdatingProduct(null)
-    }
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setEditingProduct(null)
+  }
+
+  const handleUpdate = () => {
+    window.location.reload()
   }
 
   if (products.length === 0) {
@@ -129,9 +119,13 @@ export function ProductsTable({ products, categories }: ProductsTableProps) {
                     </div>
                   </td>
                   <td className="px-4 py-4">
-                    <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {product.category.name}
-                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {product.categories.map((category) => (
+                        <span key={category.id} className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {category.name}
+                        </span>
+                      ))}
+                    </div>
                   </td>
                   <td className="px-4 py-4">
                     <div>
@@ -144,40 +138,31 @@ export function ProductsTable({ products, categories }: ProductsTableProps) {
                     </div>
                   </td>
                   <td className="px-4 py-4">
-                    {product.priceType === 'PACK' ? (
-                      <div>
-                        <p className="text-sm text-gray-900">
-                          {product.stock !== null ? `${product.stock}個` : '未設定'}
-                        </p>
-                        {product.stock !== null && product.stock <= 5 && (
-                          <p className="text-xs text-red-500">在庫少</p>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-500">量り売り</p>
-                    )}
+                    <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                      product.hasStock 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {product.hasStock ? '在庫あり' : '在庫なし'}
+                    </span>
                   </td>
                   <td className="px-4 py-4">
                     <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
                       product.isActive 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
+                        ? 'bg-blue-100 text-blue-800' 
+                        : 'bg-gray-100 text-gray-800'
                     }`}>
-                      {product.isActive ? '有効' : '無効'}
+                      {product.isActive ? '販売中' : '販売停止'}
                     </span>
                   </td>
                   <td className="px-4 py-4">
-                    <div className="flex space-x-2">
-                      <Button
-                        variant={product.isActive ? "ghost" : "default"}
-                        size="sm"
-                        onClick={() => handleToggleActive(product.id, product.isActive)}
-                        disabled={updatingProduct === product.id}
-                        isLoading={updatingProduct === product.id}
-                      >
-                        {product.isActive ? '無効化' : '有効化'}
-                      </Button>
-                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEdit(product)}
+                    >
+                      編集
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -185,6 +170,16 @@ export function ProductsTable({ products, categories }: ProductsTableProps) {
           </table>
         </div>
       </CardContent>
+
+      {editingProduct && (
+        <ProductEditModal
+          product={editingProduct}
+          categories={categories}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          onUpdate={handleUpdate}
+        />
+      )}
     </Card>
   )
 }

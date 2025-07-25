@@ -9,6 +9,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-noto-sans-jp);
+  --font-serif: "Noto Serif JP", "Yu Mincho", "YuMincho", "Hiragino Mincho Pro", "ヒラギノ明朝 Pro", "MS PMincho", "MS 明朝", serif;
 }
 
 body {

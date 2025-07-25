@@ -4,35 +4,50 @@ import { CategoryFilter } from '@/components/features/CategoryFilter'
 
 interface PageProps {
   searchParams: {
-    categoryId?: string
+    categorySlug?: string
     page?: string
   }
 }
 
 export default async function ProductsPage({ searchParams }: PageProps) {
   const currentPage = parseInt(searchParams.page || '1')
-  const categoryId = searchParams.categoryId
+  const categorySlug = searchParams.categorySlug
   const limit = 12
+
+  // カテゴリスラッグから該当するカテゴリを取得
+  const selectedCategory = categorySlug 
+    ? await prisma.category.findUnique({ where: { slug: categorySlug } })
+    : null
 
   const where = {
     isActive: true,
-    ...(categoryId && { categoryId })
+    ...(selectedCategory && {
+      categories: {
+        some: {
+          categoryId: selectedCategory.id
+        }
+      }
+    })
   }
 
   const [products, categories, totalCount] = await Promise.all([
     prisma.product.findMany({
       where,
       include: {
-        category: {
-          select: {
-            id: true,
-            name: true,
-            slug: true
+        categories: {
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                sortOrder: true
+              }
+            }
           }
         }
       },
       orderBy: [
-        { category: { sortOrder: 'asc' } },
         { name: 'asc' }
       ],
       skip: (currentPage - 1) * limit,
@@ -46,9 +61,13 @@ export default async function ProductsPage({ searchParams }: PageProps) {
   ])
 
   const totalPages = Math.ceil(totalCount / limit)
-  const selectedCategory = categoryId 
-    ? categories.find(cat => cat.id === categoryId)
-    : null
+  
+  // 商品データを変換（categories配列をcategoryの形式に変換）
+  const transformedProducts = products.map(product => ({
+    ...product,
+    category: product.categories.length > 0 ? product.categories[0].category : null,
+    categories: product.categories.map(pc => pc.category)
+  }))
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -66,11 +85,11 @@ export default async function ProductsPage({ searchParams }: PageProps) {
 
       <CategoryFilter 
         categories={categories}
-        selectedCategoryId={categoryId}
+        selectedCategorySlug={categorySlug}
       />
 
       <ProductGrid 
-        products={products}
+        products={transformedProducts}
         currentPage={currentPage}
         totalPages={totalPages}
         totalCount={totalCount}
