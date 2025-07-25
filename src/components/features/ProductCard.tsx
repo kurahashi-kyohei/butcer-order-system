@@ -12,6 +12,11 @@ interface Product {
   imageUrl?: string
   isActive: boolean
   stock?: number
+  categories?: {
+    id: string
+    name: string
+    slug: string
+  }[]
 }
 
 interface ProductCardProps {
@@ -50,37 +55,66 @@ export function ProductCard({ product }: ProductCardProps) {
   }
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="hover:shadow-lg transition-shadow duration-300">
       <CardHeader>
-        {product.imageUrl && (
-          <div className="aspect-square w-full bg-gray-100 rounded-md mb-4 flex items-center justify-center">
-            <span className="text-gray-400 text-sm">画像準備中</span>
-          </div>
-        )}
-        <CardTitle className="text-lg">{product.name}</CardTitle>
+        <div className="aspect-square bg-gray-100 rounded-lg mb-4 flex items-center justify-center">
+          {product.imageUrl ? (
+            <img
+              src={product.imageUrl}
+              alt={product.name}
+              className="w-full h-full object-cover rounded-lg"
+            />
+          ) : (
+            <span className="text-4xl">🥩</span>
+          )}
+        </div>
+        <CardTitle className="text-sm md:text-lg line-clamp-2">{product.name}</CardTitle>
         {product.description && (
-          <CardDescription>{product.description}</CardDescription>
+          <CardDescription className="text-xs md:text-sm line-clamp-2">
+            {product.description}
+          </CardDescription>
         )}
       </CardHeader>
       
-      <CardContent className="flex-1 flex flex-col">
-        <div className="flex-1">
-          <div className="text-xl font-bold text-red-600 mb-2">
-            {getPriceDisplay()}
+      <CardContent>
+        <div className="mb-4">
+          <div className="mb-2">
+            <span className="text-xl md:text-2xl font-bold text-red-600">
+              {formatPrice(product.basePrice)}
+            </span>
+            <span className="text-xs md:text-sm text-gray-500 ml-1">
+              / {product.unit}
+            </span>
           </div>
-          {getStockDisplay()}
+          {product.categories && (
+            <div className="flex flex-wrap gap-1">
+              {product.categories.slice(0, 1).map((category) => (
+                <span
+                  key={category.id}
+                  className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+                >
+                  {category.name}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         
-        <div className="mt-4">
-          <Link href={`/products/${product.id}`}>
-            <Button 
-              className="w-full" 
-              disabled={product.priceType === 'PACK' && product.stock === 0}
-            >
-              {product.priceType === 'PACK' && product.stock === 0 ? '在庫切れ' : '詳細を見る'}
-            </Button>
-          </Link>
-        </div>
+        {getStockDisplay() && (
+          <div className="mb-4">
+            {getStockDisplay()}
+          </div>
+        )}
+        
+        <Link href={`/products/${product.id}`}>
+          <Button 
+            className="w-full text-xs md:text-sm"
+            size="sm"
+            disabled={product.priceType === 'PACK' && product.stock === 0}
+          >
+            {product.priceType === 'PACK' && product.stock === 0 ? '在庫切れ' : '詳細'}
+          </Button>
+        </Link>
       </CardContent>
     </Card>
   )

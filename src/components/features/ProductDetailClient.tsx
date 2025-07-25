@@ -16,12 +16,12 @@ interface Product {
   unit: string
   imageUrl?: string | null
   isActive: boolean
-  stock?: number | null
+  hasStock: boolean
   hasUsageOption: boolean
   usageOptions?: string[]
   hasFlavorOption: boolean
   flavorOptions?: string[]
-  quantityMethod: 'WEIGHT' | 'PIECE' | 'PACK' | 'PIECE_COUNT'
+  quantityMethods: ('WEIGHT' | 'PIECE' | 'PACK' | 'PIECE_COUNT')[]
   hasRemarks: boolean
   category: {
     id: string
@@ -38,6 +38,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
   const router = useRouter()
   const [quantity, setQuantity] = useState(1)
   const [subtotal, setSubtotal] = useState(0)
+  const [selectedMethod, setSelectedMethod] = useState('')
   const [selectedOptions, setSelectedOptions] = useState<{
     selectedUsage?: string
     selectedFlavor?: string
@@ -52,7 +53,8 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
       return
     }
 
-    if (product.hasFlavorOption && product.flavorOptions && product.flavorOptions.length > 0 && !selectedOptions.selectedFlavor) {
+    // 焼肉用途の場合のみ味付けをチェック
+    if (selectedOptions.selectedUsage === '焼肉' && product.hasFlavorOption && product.flavorOptions && product.flavorOptions.length > 0 && !selectedOptions.selectedFlavor) {
       alert('味付けを選択してください')
       return
     }
@@ -65,6 +67,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
         quantity,
         price: product.basePrice,
         subtotal,
+        selectedMethod,
         selectedUsage: selectedOptions.selectedUsage,
         selectedFlavor: selectedOptions.selectedFlavor,
         remarks: selectedOptions.remarks,
@@ -74,6 +77,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
       const existingCart = JSON.parse(sessionStorage.getItem('cart') || '[]')
       const existingItemIndex = existingCart.findIndex((item: any) => 
         item.productId === cartItem.productId &&
+        item.selectedMethod === cartItem.selectedMethod &&
         item.selectedUsage === cartItem.selectedUsage &&
         item.selectedFlavor === cartItem.selectedFlavor
       )
@@ -111,18 +115,6 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
           <CardTitle>数量・オプション選択</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <QuantitySelector
-            priceType={product.priceType}
-            quantityMethod={product.quantityMethod}
-            basePrice={product.basePrice}
-            unit={product.unit}
-            stock={product.stock}
-            onQuantityChange={(qty, sub) => {
-              setQuantity(qty)
-              setSubtotal(sub)
-            }}
-          />
-
           <ProductOptions
             hasUsageOption={product.hasUsageOption}
             usageOptions={product.usageOptions}
@@ -130,6 +122,19 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             flavorOptions={product.flavorOptions}
             hasRemarks={product.hasRemarks}
             onOptionsChange={setSelectedOptions}
+          />
+
+          <QuantitySelector
+            priceType={product.priceType}
+            quantityMethods={product.quantityMethods}
+            basePrice={product.basePrice}
+            unit={product.unit}
+            hasStock={product.hasStock}
+            onQuantityChange={(qty, sub, method) => {
+              setQuantity(qty)
+              setSubtotal(sub)
+              setSelectedMethod(method)
+            }}
           />
         </CardContent>
       </Card>
@@ -146,9 +151,9 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             </div>
             <div className="flex justify-between">
               <span>数量:</span>
-              <span>{quantity}{product.quantityMethod === 'WEIGHT' ? 'g' : 
-                product.quantityMethod === 'PIECE' ? '枚' :
-                product.quantityMethod === 'PACK' ? 'パック' : '本'}</span>
+              <span>{quantity}{selectedMethod === 'WEIGHT' ? 'g' : 
+                selectedMethod === 'PIECE' ? '枚' :
+                selectedMethod === 'PACK' ? 'パック' : '本'}</span>
             </div>
             {selectedOptions.selectedUsage && (
               <div className="flex justify-between">
@@ -176,9 +181,9 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             className="w-full"
             size="lg"
             isLoading={isAddingToCart}
-            disabled={isAddingToCart || (product.priceType === 'PACK' && product.stock === 0)}
+            disabled={isAddingToCart || !product.hasStock}
           >
-            {product.priceType === 'PACK' && product.stock === 0 
+            {!product.hasStock 
               ? '在庫切れ' 
               : 'カートに追加'}
           </Button>

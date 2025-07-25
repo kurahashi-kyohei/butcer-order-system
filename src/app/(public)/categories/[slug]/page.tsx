@@ -15,13 +15,25 @@ async function getCategory(slug: string) {
     where: { slug, isActive: true },
     include: {
       products: {
-        where: { isActive: true },
-        orderBy: { name: 'asc' }
+        where: {
+          product: { isActive: true }
+        },
+        include: {
+          product: true
+        },
+        orderBy: {
+          product: { name: 'asc' }
+        }
       }
     }
   })
 
-  return category
+  if (!category) return null
+
+  return {
+    ...category,
+    products: category.products.map(pc => pc.product)
+  }
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
@@ -55,7 +67,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       </div>
 
       {category.products.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {category.products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

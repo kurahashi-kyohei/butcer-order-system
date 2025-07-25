@@ -11,10 +11,10 @@ interface Category {
 
 interface CategoryFilterProps {
   categories: Category[]
-  selectedCategoryId?: string
+  selectedCategorySlug?: string
 }
 
-export function CategoryFilter({ categories, selectedCategoryId }: CategoryFilterProps) {
+export function CategoryFilter({ categories, selectedCategorySlug }: CategoryFilterProps) {
   const searchParams = useSearchParams()
 
   return (
@@ -23,7 +23,7 @@ export function CategoryFilter({ categories, selectedCategoryId }: CategoryFilte
         <Link
           href="/products"
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            !selectedCategoryId
+            !selectedCategorySlug
               ? 'bg-red-600 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
@@ -34,9 +34,9 @@ export function CategoryFilter({ categories, selectedCategoryId }: CategoryFilte
         {categories.map((category) => (
           <Link
             key={category.id}
-            href={`/products?categoryId=${category.id}`}
+            href={`/products?categorySlug=${category.slug}`}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-              selectedCategoryId === category.id
+              selectedCategorySlug === category.slug
                 ? 'bg-red-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}

@@ -12,11 +12,15 @@ export async function GET(
         isActive: true 
       },
       include: {
-        category: {
-          select: {
-            id: true,
-            name: true,
-            slug: true
+        categories: {
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+                slug: true
+              }
+            }
           }
         }
       }
@@ -29,11 +33,46 @@ export async function GET(
       )
     }
 
-    // JSONフィールドを適切な形式に変換
+    // 用途オプションの取得
+    let usageOptions: string[] = []
+    let hasUsageOption = false
+    if (product.usageOptionIds) {
+      const usageOptionIdList = product.usageOptionIds.split(',')
+      const usageOptionsData = await prisma.usageOption.findMany({
+        where: {
+          id: { in: usageOptionIdList },
+          isActive: true
+        },
+        orderBy: { sortOrder: 'asc' }
+      })
+      usageOptions = usageOptionsData.map(option => option.name)
+      hasUsageOption = usageOptions.length > 0
+    }
+
+    // 味付けオプションの取得
+    let flavorOptions: string[] = []
+    let hasFlavorOption = false
+    if (product.flavorOptionIds) {
+      const flavorOptionIdList = product.flavorOptionIds.split(',')
+      const flavorOptionsData = await prisma.flavorOption.findMany({
+        where: {
+          id: { in: flavorOptionIdList },
+          isActive: true
+        },
+        orderBy: { sortOrder: 'asc' }
+      })
+      flavorOptions = flavorOptionsData.map(option => option.name)
+      hasFlavorOption = flavorOptions.length > 0
+    }
+
     const responseProduct = {
       ...product,
-      usageOptions: product.usageOptions ? JSON.parse(product.usageOptions as string) : [],
-      flavorOptions: product.flavorOptions ? JSON.parse(product.flavorOptions as string) : [],
+      categories: product.categories.map(pc => pc.category),
+      hasUsageOption,
+      usageOptions,
+      hasFlavorOption,
+      flavorOptions,
+      quantityMethods: product.quantityMethods ? product.quantityMethods.split(',') : ['WEIGHT'],
     }
 
     return NextResponse.json(responseProduct)

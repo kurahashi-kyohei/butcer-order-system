@@ -18,19 +18,23 @@ export async function PATCH(
       )
     }
 
-    const body = await request.json()
-    const { isActive } = body
-
-    if (typeof isActive !== 'boolean') {
-      return NextResponse.json(
-        { error: 'Invalid request body' },
-        { status: 400 }
-      )
-    }
+    const data = await request.json()
+    
+    // 更新データのバリデーション
+    const updateData: any = {}
+    
+    if (data.name !== undefined) updateData.name = data.name
+    if (data.description !== undefined) updateData.description = data.description || null
+    if (data.basePrice !== undefined) updateData.basePrice = parseInt(data.basePrice)
+    if (data.unit !== undefined) updateData.unit = data.unit
+    if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl || null
+    if (data.hasStock !== undefined) updateData.hasStock = data.hasStock
+    if (data.isActive !== undefined) updateData.isActive = data.isActive
+    if (data.categoryId !== undefined) updateData.categoryId = data.categoryId
 
     const updatedProduct = await prisma.product.update({
       where: { id },
-      data: { isActive },
+      data: updateData,
       include: {
         category: {
           select: {

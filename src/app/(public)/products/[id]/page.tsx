@@ -10,11 +10,15 @@ async function getProduct(id: string) {
       isActive: true 
     },
     include: {
-      category: {
-        select: {
-          id: true,
-          name: true,
-          slug: true
+      categories: {
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true
+            }
+          }
         }
       }
     }
@@ -24,10 +28,46 @@ async function getProduct(id: string) {
     return null
   }
 
+  // 用途オプションの取得
+  let usageOptions: string[] = []
+  let hasUsageOption = false
+  if (product.usageOptionIds) {
+    const usageOptionIdList = product.usageOptionIds.split(',')
+    const usageOptionsData = await prisma.usageOption.findMany({
+      where: {
+        id: { in: usageOptionIdList },
+        isActive: true
+      },
+      orderBy: { sortOrder: 'asc' }
+    })
+    usageOptions = usageOptionsData.map(option => option.name)
+    hasUsageOption = usageOptions.length > 0
+  }
+
+  // 味付けオプションの取得
+  let flavorOptions: string[] = []
+  let hasFlavorOption = false
+  if (product.flavorOptionIds) {
+    const flavorOptionIdList = product.flavorOptionIds.split(',')
+    const flavorOptionsData = await prisma.flavorOption.findMany({
+      where: {
+        id: { in: flavorOptionIdList },
+        isActive: true
+      },
+      orderBy: { sortOrder: 'asc' }
+    })
+    flavorOptions = flavorOptionsData.map(option => option.name)
+    hasFlavorOption = flavorOptions.length > 0
+  }
+
   return {
     ...product,
-    usageOptions: product.usageOptions ? JSON.parse(product.usageOptions as string) : [],
-    flavorOptions: product.flavorOptions ? JSON.parse(product.flavorOptions as string) : [],
+    categories: product.categories.map(pc => pc.category),
+    hasUsageOption,
+    usageOptions,
+    hasFlavorOption,
+    flavorOptions,
+    quantityMethods: product.quantityMethods ? product.quantityMethods.split(',') : ['WEIGHT'],
   }
 }
 
@@ -66,9 +106,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
           ホーム
         </Link>
         <span>/</span>
-        <Link href={`/categories/${product.category.slug}`} className="hover:text-gray-700">
-          {product.category.name}
-        </Link>
+        {product.categories.length > 0 && (
+          <Link href={`/categories/${product.categories[0].slug}`} className="hover:text-gray-700">
+            {product.categories[0].name}
+          </Link>
+        )}
         <span>/</span>
         <span className="text-gray-900">{product.name}</span>
       </nav>
@@ -102,17 +144,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {getPriceDisplay()}
           </div>
 
-          {product.priceType === 'PACK' && product.stock !== null && (
-            <div className="text-sm">
-              {product.stock === 0 ? (
-                <span className="text-red-600 font-medium">在庫切れ</span>
-              ) : product.stock <= 5 ? (
-                <span className="text-orange-600">残り{product.stock}点</span>
-              ) : (
-                <span className="text-green-600">在庫あり</span>
-              )}
-            </div>
-          )}
+          <div className="text-sm">
+            {product.hasStock ? (
+              <span className="text-green-600">在庫あり</span>
+            ) : (
+              <span className="text-red-600 font-medium">在庫切れ</span>
+            )}
+          </div>
         </div>
       </div>
 
