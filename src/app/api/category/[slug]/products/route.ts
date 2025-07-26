@@ -1,18 +1,33 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function GET(request: Request) {
+interface RouteParams {
+  params: {
+    slug: string
+  }
+}
+
+export async function GET(request: Request, { params }: RouteParams) {
   try {
     const { searchParams } = new URL(request.url)
-    const categoryId = searchParams.get('categoryId')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '12')
     const sort = searchParams.get('sort') || 'name-asc'
     const skip = (page - 1) * limit
 
-    const where = {
-      isActive: true,
-      ...(categoryId && { categoryId })
+    // カテゴリを取得
+    const category = await prisma.category.findUnique({
+      where: { 
+        slug: params.slug,
+        isActive: true
+      }
+    })
+
+    if (!category) {
+      return NextResponse.json(
+        { error: 'Category not found' },
+        { status: 404 }
+      )
     }
 
     // ソート条件を構築
@@ -34,15 +49,28 @@ export async function GET(request: Request) {
       }
     }
 
+    const where = {
+      isActive: true,
+      categories: {
+        some: {
+          categoryId: category.id
+        }
+      }
+    }
+
     const [products, totalCount] = await Promise.all([
       prisma.product.findMany({
         where,
         include: {
-          category: {
-            select: {
-              id: true,
-              name: true,
-              slug: true
+          categories: {
+            include: {
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true
+                }
+              }
             }
           }
         },
@@ -55,8 +83,16 @@ export async function GET(request: Request) {
 
     const totalPages = Math.ceil(totalCount / limit)
 
+    // 商品データを変換
+    const transformedProducts = products.map(product => ({
+      ...product,
+      category: product.categories.length > 0 ? product.categories[0].category : null,
+      categories: product.categories.map(pc => pc.category)
+    }))
+
     return NextResponse.json({
-      products,
+      category,
+      products: transformedProducts,
       pagination: {
         currentPage: page,
         totalPages,
@@ -66,9 +102,9 @@ export async function GET(request: Request) {
       }
     })
   } catch (error) {
-    console.error('Error fetching products:', error)
+    console.error('Error fetching category products:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch products' },
+      { error: 'Failed to fetch category products' },
       { status: 500 }
     )
   }
