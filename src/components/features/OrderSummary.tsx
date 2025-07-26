@@ -4,12 +4,18 @@ interface OrderSummaryProps {
     quantity: number
     price: number
     priceType: 'WEIGHT_BASED' | 'PACK'
+    subtotal?: number
   }>
   className?: string
 }
 
 export function OrderSummary({ items, className }: OrderSummaryProps) {
-  const calculateItemTotal = (item: { quantity: number; price: number; priceType: 'WEIGHT_BASED' | 'PACK' }) => {
+  const calculateItemTotal = (item: { quantity: number; price: number; priceType: 'WEIGHT_BASED' | 'PACK'; subtotal?: number }) => {
+    // subtotalが提供されている場合はそれを使用、そうでなければ従来の計算
+    if (item.subtotal !== undefined) {
+      return item.subtotal
+    }
+    
     if (item.priceType === 'WEIGHT_BASED') {
       return Math.round((item.price * item.quantity) / 100)
     } else {

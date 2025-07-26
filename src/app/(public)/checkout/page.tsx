@@ -36,6 +36,11 @@ interface CartItemData {
   remarks?: string
   quantityMethod: 'WEIGHT' | 'PIECE' | 'PACK' | 'PIECE_COUNT'
   priceType: 'WEIGHT_BASED' | 'PACK'
+  pieceDetails?: {
+    pieceGrams?: number
+    pieceCount?: number
+    packCount?: number
+  }
 }
 
 export default function CheckoutPage() {
@@ -89,8 +94,9 @@ export default function CheckoutPage() {
                 selectedUsage: item.selectedUsage,
                 selectedFlavor: item.selectedFlavor,
                 remarks: item.remarks,
-                quantityMethod: product.quantityMethod,
+                quantityMethod: Array.isArray(product.quantityMethods) ? product.quantityMethods[0] : 'WEIGHT',
                 priceType: product.priceType,
+                pieceDetails: item.pieceDetails,
               }
             }
             return null
@@ -280,7 +286,8 @@ export default function CheckoutPage() {
                   id: item.id,
                   quantity: item.quantity,
                   price: item.price,
-                  priceType: item.priceType
+                  priceType: item.priceType,
+                  subtotal: item.subtotal
                 }))}
               />
 
@@ -295,9 +302,16 @@ export default function CheckoutPage() {
                       <div key={item.id} className="text-sm">
                         <div className="font-medium">{item.productName}</div>
                         <div className="text-gray-600">
-                          {item.quantity}{item.quantityMethod === 'WEIGHT' ? 'g' : 
-                            item.quantityMethod === 'PIECE' ? '枚' :
-                            item.quantityMethod === 'PACK' ? 'パック' : '本'}
+                          {item.quantityMethod === 'PIECE' && item.pieceDetails ? 
+                            `${item.pieceDetails.pieceGrams}g × ${item.pieceDetails.pieceCount}枚 × ${item.pieceDetails.packCount}パック = ${item.quantity}g` :
+                          item.quantityMethod === 'WEIGHT' && item.pieceDetails?.packCount && item.pieceDetails.packCount > 1 ?
+                            `${item.quantity}g × ${item.pieceDetails.packCount}パック` :
+                          item.quantityMethod === 'PIECE_COUNT' && item.pieceDetails?.packCount && item.pieceDetails.packCount > 1 ?
+                            `${item.quantity}本 × ${item.pieceDetails.packCount}パック` :
+                            `${item.quantity}${item.quantityMethod === 'WEIGHT' ? 'g' : 
+                              item.quantityMethod === 'PIECE' ? '枚' :
+                              item.quantityMethod === 'PACK' ? 'パック' : '本'}`
+                          }
                           {item.selectedUsage && ` / ${item.selectedUsage}`}
                           {item.selectedFlavor && ` / ${item.selectedFlavor}`}
                         </div>

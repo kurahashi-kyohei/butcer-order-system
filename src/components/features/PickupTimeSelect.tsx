@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Select } from '@/components/ui/Select'
+import { CustomSelect } from '@/components/ui/CustomSelect'
 import { format, addDays, isWeekend, isSunday, setHours, setMinutes } from 'date-fns'
 import { ja } from 'date-fns/locale'
 
@@ -125,7 +125,7 @@ export function PickupTimeSelect({ onTimeChange }: PickupTimeSelectProps) {
         <label className="block text-sm font-medium text-gray-700 mb-2">
           受け取り日 <span className="text-red-500">*</span>
         </label>
-        <Select
+        <CustomSelect
           options={getAvailableDates()}
           placeholder="日付を選択してください"
           value={selectedDate}
@@ -137,7 +137,7 @@ export function PickupTimeSelect({ onTimeChange }: PickupTimeSelectProps) {
         <label className="block text-sm font-medium text-gray-700 mb-2">
           受け取り時間 <span className="text-red-500">*</span>
         </label>
-        <Select
+        <CustomSelect
           options={availableTimes}
           placeholder={selectedDate ? "時間を選択してください" : "まず日付を選択してください"}
           value={selectedTime}

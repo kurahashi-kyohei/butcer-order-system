@@ -24,10 +24,10 @@ export function QuantitySelector({
 }: QuantitySelectorProps) {
   const [selectedMethod, setSelectedMethod] = useState<string>(quantityMethods[0])
   const [quantity, setQuantity] = useState<number>(quantityMethods[0] === 'WEIGHT' ? 100 : 1)
-  // 枚数選択時の詳細設定用の状態
+  // 各選択時の詳細設定用の状態
   const [pieceGrams, setPieceGrams] = useState<number>(100) // 1枚あたりのグラム数
   const [pieceCount, setPieceCount] = useState<number>(1)   // 枚数
-  const [packCount, setPackCount] = useState<number>(1)     // パック数
+  const [packCount, setPackCount] = useState<number>(1)     // パック数（全選択方法共通）
 
   const getQuantityLabel = (method?: string) => {
     const targetMethod = method || selectedMethod
@@ -80,47 +80,61 @@ export function QuantitySelector({
     const targetMethod = method || selectedMethod
     switch (targetMethod) {
       case 'WEIGHT':
-        // 重量の場合: g × p
-        return Math.round((basePrice * qty) / 100)
+        // 重量選択時: (g × パック数 × basePrice) / 100
+        return Math.round((basePrice * qty * packCount) / 100)
       case 'PIECE':
-        // 枚数の場合: g × 枚数 × パック数 × p
+        // 枚数の場合: (g × 枚数 × パック数 × basePrice) / 100
         return Math.round((basePrice * pieceGrams * pieceCount * packCount) / 100)
       case 'PIECE_COUNT':
-        // 本数の場合: 本数 × p
-        return basePrice * qty
+        // 本数選択時: 本数 × パック数 × basePrice
+        return basePrice * qty * packCount
       case 'PACK':
-        // パック数の場合: p
+        // パック数の場合: パック数 × basePrice
         return basePrice * qty
       default:
         return basePrice * qty
     }
   }
 
-  // 枚数選択時の設定変更を監視
+  // 選択方法の変更を監視
   useEffect(() => {
     if (selectedMethod === 'PIECE') {
       const totalQuantity = pieceGrams * pieceCount * packCount
-      const subtotal = calculateSubtotal(0) // 計算は内部で行う
+      const subtotal = calculateSubtotal(totalQuantity, selectedMethod)
       onQuantityChange(totalQuantity, subtotal, selectedMethod, { pieceGrams, pieceCount, packCount })
+    } else if (selectedMethod === 'WEIGHT' || selectedMethod === 'PIECE_COUNT') {
+      // 重量選択や本数選択時もパック数の変更を反映
+      const subtotal = calculateSubtotal(quantity, selectedMethod)
+      onQuantityChange(quantity, subtotal, selectedMethod, { packCount })
     }
-  }, [pieceGrams, pieceCount, packCount, selectedMethod])
+  }, [pieceGrams, pieceCount, packCount, selectedMethod, quantity])
 
   // 初期値を親コンポーネントに通知
   useEffect(() => {
     const initialQuantity = selectedMethod === 'WEIGHT' ? 100 : 
                            selectedMethod === 'PIECE' ? pieceGrams * pieceCount * packCount : 1
     const initialSubtotal = calculateSubtotal(initialQuantity)
-    const details = selectedMethod === 'PIECE' ? { pieceGrams, pieceCount, packCount } : undefined
+    const details = selectedMethod === 'PIECE' ? { pieceGrams, pieceCount, packCount } : 
+                   selectedMethod === 'WEIGHT' || selectedMethod === 'PIECE_COUNT' ? { packCount } : undefined
     onQuantityChange(initialQuantity, initialSubtotal, selectedMethod, details)
   }, []) // 初回マウント時のみ実行
 
   // 数量選択方法が変更されたときの処理
   const handleMethodChange = (newMethod: string) => {
     setSelectedMethod(newMethod)
-    const newQuantity = newMethod === 'WEIGHT' ? 100 : 1
-    setQuantity(newQuantity)
-    const subtotal = calculateSubtotal(newQuantity, newMethod)
-    onQuantityChange(newQuantity, subtotal, newMethod)
+    
+    if (newMethod === 'PIECE') {
+      // PIECE選択時は初期値を設定し、useEffectで処理
+      const totalQuantity = pieceGrams * pieceCount * packCount
+      const subtotal = calculateSubtotal(totalQuantity, newMethod)
+      onQuantityChange(totalQuantity, subtotal, newMethod, { pieceGrams, pieceCount, packCount })
+    } else {
+      const newQuantity = newMethod === 'WEIGHT' ? 100 : 1
+      setQuantity(newQuantity)
+      const subtotal = calculateSubtotal(newQuantity, newMethod)
+      const details = newMethod === 'WEIGHT' || newMethod === 'PIECE_COUNT' ? { packCount } : undefined
+      onQuantityChange(newQuantity, subtotal, newMethod, details)
+    }
   }
 
   const handleQuantityChange = (newQuantity: number) => {
@@ -131,7 +145,8 @@ export function QuantitySelector({
 
     setQuantity(newQuantity)
     const subtotal = calculateSubtotal(newQuantity)
-    onQuantityChange(newQuantity, subtotal, selectedMethod)
+    const details = selectedMethod === 'WEIGHT' || selectedMethod === 'PIECE_COUNT' ? { packCount } : undefined
+    onQuantityChange(newQuantity, subtotal, selectedMethod, details)
   }
 
   const getPresetOptions = () => {
@@ -322,6 +337,40 @@ export function QuantitySelector({
                 +
               </Button>
             </div>
+
+            {/* 重量選択と本数選択時のパック数選択 */}
+            {(selectedMethod === 'WEIGHT' || selectedMethod === 'PIECE_COUNT') && (
+              <div className="mt-4">
+                <label className="block text-xs text-gray-600 mb-1">パック数</label>
+                <div className="flex items-center space-x-2 flex-nowrap">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPackCount(Math.max(1, packCount - 1))}
+                    disabled={packCount <= 1}
+                  >
+                    -
+                  </Button>
+                  <Input
+                    type="number"
+                    value={packCount}
+                    onChange={(e) => setPackCount(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-20 text-center"
+                    min={1}
+                    disabled={!hasStock}
+                  />
+                  <span className="text-sm text-gray-600 whitespace-nowrap">パック</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPackCount(packCount + 1)}
+                    disabled={!hasStock}
+                  >
+                    +
+                  </Button>
+                </div>
+              </div>
+            )}
           </>
         )}
 
