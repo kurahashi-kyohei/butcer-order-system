@@ -76,7 +76,8 @@ export default async function Home() {
             <div className="flex justify-center">
               <Link href="/products">
                 <Button 
-                  size="lg" 
+                  size="lg"
+                  variant="outline"
                   className="bg-white text-red-700 hover:bg-gray-100 border-0 font-semibold px-8 py-3 text-lg shadow-lg"
                 >
                   商品一覧を見る
@@ -85,10 +86,13 @@ export default async function Home() {
             </div>
             
             <div className="mt-8 text-sm opacity-90">
-              <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-                <span>営業時間: 9:00 - 18:00</span>
+              <div className="flex flex-col items-center sm:flex-row justify-center sm:items-start gap-4">
+                <div className="flex flex-col items-end">
+                  <span>営業時間: 9:00 - 16:30(平日)</span>
+                  <span>8:00 - 16:00(土曜)</span>
+                </div>
                 <span className="hidden sm:inline">|</span>
-                <span>定休日: 日曜日</span>
+                <span>定休日: 日曜日、祝日</span>
               </div>
             </div>
           </div>
@@ -109,7 +113,7 @@ export default async function Home() {
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {categories.map((category) => (
-              <Link key={category.id} href={`/categories/${category.slug}`}>
+              <Link key={category.id} href={`/category/${category.slug}`}>
                 <Card className="hover:shadow-lg transition-shadow duration-300 cursor-pointer h-full">
                   <CardHeader className="text-center pb-2">
                     <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
@@ -143,11 +147,11 @@ export default async function Home() {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {featuredProducts.map((product) => (
               <Card key={product.id} className="hover:shadow-lg transition-shadow duration-300">
-                <CardHeader>
-                  <div className="aspect-square bg-gray-100 rounded-lg mb-4 flex items-center justify-center">
+                <CardHeader className="p-3">
+                  <div className="aspect-square bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
                     {product.imageUrl ? (
                       <img
                         src={product.imageUrl}
@@ -155,28 +159,28 @@ export default async function Home() {
                         className="w-full h-full object-cover rounded-lg"
                       />
                     ) : (
-                      <span className="text-4xl">🥩</span>
+                      <span className="text-2xl">🥩</span>
                     )}
                   </div>
-                  <CardTitle className="text-lg">{product.name}</CardTitle>
+                  <CardTitle className="text-sm font-semibold">{product.name}</CardTitle>
                   {product.description && (
-                    <CardDescription className="line-clamp-2">
+                    <CardDescription className="text-xs line-clamp-1">
                       {product.description}
                     </CardDescription>
                   )}
                 </CardHeader>
-                <CardContent>
-                  <div className="flex justify-between items-center mb-4">
-                    <div>
-                      <span className="text-2xl font-bold text-red-600">
+                <CardContent className="p-3 pt-0">
+                  <div className="mb-3">
+                    <div className="mb-2">
+                      <span className="text-lg font-bold text-red-600">
                         {formatPrice(product.basePrice)}
                       </span>
-                      <span className="text-sm text-gray-500 ml-1">
+                      <span className="text-xs text-gray-500 ml-1">
                         / {product.unit}
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-1">
-                      {product.categories.slice(0, 2).map((category) => (
+                      {product.categories.slice(0, 1).map((category) => (
                         <span
                           key={category.id}
                           className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
@@ -188,8 +192,8 @@ export default async function Home() {
                   </div>
                   
                   <Link href={`/products/${product.id}`}>
-                    <Button className="w-full">
-                      商品詳細を見る
+                    <Button size="sm" className="w-full text-xs">
+                      詳細を見る
                     </Button>
                   </Link>
                 </CardContent>

@@ -1,19 +1,16 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Select } from '@/components/ui/Select'
-import { Textarea } from '@/components/ui/Textarea'
+import { CustomSelect } from '@/components/ui/CustomSelect'
 
 interface ProductOptionsProps {
   hasUsageOption: boolean
   usageOptions?: string[]
   hasFlavorOption: boolean
   flavorOptions?: string[]
-  hasRemarks: boolean
   onOptionsChange: (options: {
     selectedUsage?: string
     selectedFlavor?: string
-    remarks?: string
   }) => void
 }
 
@@ -22,12 +19,10 @@ export function ProductOptions({
   usageOptions = [],
   hasFlavorOption,
   flavorOptions = [],
-  hasRemarks,
   onOptionsChange
 }: ProductOptionsProps) {
   const [selectedUsage, setSelectedUsage] = useState<string>('')
   const [selectedFlavor, setSelectedFlavor] = useState<string>('')
-  const [remarks, setRemarks] = useState<string>('')
   const isFirstRender = useRef(true)
 
   // 用途が変更されたときの処理
@@ -54,10 +49,9 @@ export function ProductOptions({
     
     onOptionsChange({
       selectedUsage: selectedUsage || undefined,
-      selectedFlavor: selectedFlavor || undefined,
-      remarks: remarks || undefined
+      selectedFlavor: selectedFlavor || undefined
     })
-  }, [selectedUsage, selectedFlavor, remarks])
+  }, [selectedUsage, selectedFlavor])
 
   return (
     <div className="space-y-4">
@@ -66,7 +60,7 @@ export function ProductOptions({
           <label className="block text-sm font-medium text-gray-700 mb-2">
             用途 <span className="text-red-500">*</span>
           </label>
-          <Select
+          <CustomSelect
             options={usageOptions.map(option => ({
               value: option,
               label: option
@@ -83,7 +77,7 @@ export function ProductOptions({
           <label className="block text-sm font-medium text-gray-700 mb-2">
             味付け {isFlavorEnabled && <span className="text-red-500">*</span>}
           </label>
-          <Select
+          <CustomSelect
             options={flavorOptions.map(option => ({
               value: option,
               label: option
@@ -98,20 +92,6 @@ export function ProductOptions({
               選択された用途（{selectedUsage}）では味付けは「なし」になります
             </p>
           )}
-        </div>
-      )}
-
-      {hasRemarks && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            備考（任意）
-          </label>
-          <Textarea
-            placeholder="特別な要望があればご記入ください"
-            value={remarks}
-            onChange={(e) => setRemarks(e.target.value)}
-            rows={3}
-          />
         </div>
       )}
     </div>

@@ -510,21 +510,6 @@ async function main() {
       hasRemarks: false,
       hasStock: true
     },
-    // しゃぶしゃぶカテゴリ
-    {
-      id: 'pork-bara-shabu',
-      name: '豚バラ',
-      description: '豚バラです。焼肉、しゃぶしゃぶ、その他の用途に最適です。',
-      priceType: 'WEIGHT_BASED' as const,
-      basePrice: 160,
-      unit: '100g',
-      categories: ['yakiniku', 'pork', 'shabu'],
-      usageOptionIds: `${yakinikuUsage?.id},${shabuUsage?.id},${otherUsage?.id}`,
-      flavorOptionIds: `${jishaSpecialFlavor?.id},${shioFlavor?.id},${horumonFlavor?.id},${shiokoshoFlavor?.id},${nashiFlavor?.id}`,
-      quantityMethods: 'WEIGHT',
-      hasRemarks: true,
-      hasStock: true
-    },
     // 牛肉カテゴリ
     {
       id: 'beef-shoulder-loin-domestic',

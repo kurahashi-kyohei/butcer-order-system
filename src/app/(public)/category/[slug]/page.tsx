@@ -1,36 +1,33 @@
 import { prisma } from '@/lib/prisma'
 import { ProductGrid } from '@/components/features/ProductGrid'
-import { CategoryFilter } from '@/components/features/CategoryFilter'
 import { ProductSort, SortOption } from '@/components/features/ProductSort'
+import { notFound } from 'next/navigation'
 
 interface PageProps {
+  params: {
+    slug: string
+  }
   searchParams: {
-    categorySlug?: string
     page?: string
     sort?: string
   }
 }
 
-export default async function ProductsPage({ searchParams }: PageProps) {
+export default async function CategoryPage({ params, searchParams }: PageProps) {
   const currentPage = parseInt(searchParams.page || '1')
-  const categorySlug = searchParams.categorySlug
   const sort = (searchParams.sort || 'name-asc') as SortOption
   const limit = 12
 
-  // カテゴリスラッグから該当するカテゴリを取得
-  const selectedCategory = categorySlug 
-    ? await prisma.category.findUnique({ where: { slug: categorySlug } })
-    : null
+  // カテゴリを取得
+  const category = await prisma.category.findUnique({
+    where: { 
+      slug: params.slug,
+      isActive: true
+    }
+  })
 
-  const where = {
-    isActive: true,
-    ...(selectedCategory && {
-      categories: {
-        some: {
-          categoryId: selectedCategory.id
-        }
-      }
-    })
+  if (!category) {
+    notFound()
   }
 
   // ソート条件を構築
@@ -52,7 +49,16 @@ export default async function ProductsPage({ searchParams }: PageProps) {
     }
   }
 
-  const [products, categories, totalCount] = await Promise.all([
+  const where = {
+    isActive: true,
+    categories: {
+      some: {
+        categoryId: category.id
+      }
+    }
+  }
+
+  const [products, totalCount] = await Promise.all([
     prisma.product.findMany({
       where,
       include: {
@@ -73,10 +79,6 @@ export default async function ProductsPage({ searchParams }: PageProps) {
       skip: (currentPage - 1) * limit,
       take: limit
     }),
-    prisma.category.findMany({
-      where: { isActive: true },
-      orderBy: { sortOrder: 'asc' }
-    }),
     prisma.product.count({ where })
   ])
 
@@ -93,20 +95,12 @@ export default async function ProductsPage({ searchParams }: PageProps) {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          {selectedCategory ? selectedCategory.name : '全商品'}
+          {category.name}
         </h1>
         <p className="text-gray-600">
-          {selectedCategory 
-            ? `${selectedCategory.name}の商品一覧です` 
-            : '全ての商品をご覧いただけます'
-          }
+          {category.name}の商品一覧です（{totalCount}件）
         </p>
       </div>
-
-      <CategoryFilter 
-        categories={categories}
-        selectedCategorySlug={categorySlug}
-      />
 
       <ProductSort currentSort={sort} />
 
@@ -118,4 +112,15 @@ export default async function ProductsPage({ searchParams }: PageProps) {
       />
     </div>
   )
+}
+
+export async function generateStaticParams() {
+  const categories = await prisma.category.findMany({
+    where: { isActive: true },
+    select: { slug: true }
+  })
+
+  return categories.map((category) => ({
+    slug: category.slug,
+  }))
 }
