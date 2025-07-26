@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
-import { Select } from '@/components/ui/Select'
+import { CustomSelect } from '@/components/ui/CustomSelect'
 
 interface QuantitySelectorProps {
   priceType: 'WEIGHT_BASED' | 'PACK'
@@ -11,7 +11,7 @@ interface QuantitySelectorProps {
   basePrice: number
   unit: string
   hasStock: boolean
-  onQuantityChange: (quantity: number, subtotal: number, selectedMethod: string) => void
+  onQuantityChange: (quantity: number, subtotal: number, selectedMethod: string, details?: { pieceGrams?: number, pieceCount?: number, packCount?: number }) => void
 }
 
 export function QuantitySelector({
@@ -101,7 +101,7 @@ export function QuantitySelector({
     if (selectedMethod === 'PIECE') {
       const totalQuantity = pieceGrams * pieceCount * packCount
       const subtotal = calculateSubtotal(0) // 計算は内部で行う
-      onQuantityChange(totalQuantity, subtotal, selectedMethod)
+      onQuantityChange(totalQuantity, subtotal, selectedMethod, { pieceGrams, pieceCount, packCount })
     }
   }, [pieceGrams, pieceCount, packCount, selectedMethod])
 
@@ -110,7 +110,8 @@ export function QuantitySelector({
     const initialQuantity = selectedMethod === 'WEIGHT' ? 100 : 
                            selectedMethod === 'PIECE' ? pieceGrams * pieceCount * packCount : 1
     const initialSubtotal = calculateSubtotal(initialQuantity)
-    onQuantityChange(initialQuantity, initialSubtotal, selectedMethod)
+    const details = selectedMethod === 'PIECE' ? { pieceGrams, pieceCount, packCount } : undefined
+    onQuantityChange(initialQuantity, initialSubtotal, selectedMethod, details)
   }, []) // 初回マウント時のみ実行
 
   // 数量選択方法が変更されたときの処理
@@ -153,7 +154,7 @@ export function QuantitySelector({
           <label className="block text-sm font-medium text-gray-700 mb-2">
             購入方法を選択 <span className="text-red-500">*</span>
           </label>
-          <Select
+          <CustomSelect
             options={quantityMethods.map(method => ({
               value: method,
               label: getMethodDisplayName(method)
@@ -175,7 +176,7 @@ export function QuantitySelector({
             {/* 1枚あたりのグラム数 */}
             <div>
               <label className="block text-xs text-gray-600 mb-1">1枚あたりのグラム数</label>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 flex-nowrap">
                 <Button
                   variant="outline"
                   size="sm"
@@ -187,7 +188,7 @@ export function QuantitySelector({
                 <div className="w-20 h-9 border border-gray-300 rounded-md flex items-center justify-center bg-gray-50">
                   <span className="text-sm font-medium">{pieceGrams}</span>
                 </div>
-                <span className="text-sm text-gray-600">g</span>
+                <span className="text-sm text-gray-600 whitespace-nowrap">g</span>
                 <Button
                   variant="outline"
                   size="sm"
@@ -202,7 +203,7 @@ export function QuantitySelector({
             {/* 枚数 */}
             <div>
               <label className="block text-xs text-gray-600 mb-1">枚数</label>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 flex-nowrap">
                 <Button
                   variant="outline"
                   size="sm"
@@ -219,7 +220,7 @@ export function QuantitySelector({
                   min={1}
                   disabled={!hasStock}
                 />
-                <span className="text-sm text-gray-600">枚</span>
+                <span className="text-sm text-gray-600 whitespace-nowrap">枚</span>
                 <Button
                   variant="outline"
                   size="sm"
@@ -234,7 +235,7 @@ export function QuantitySelector({
             {/* パック数 */}
             <div>
               <label className="block text-xs text-gray-600 mb-1">パック数</label>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 flex-nowrap">
                 <Button
                   variant="outline"
                   size="sm"
@@ -251,7 +252,7 @@ export function QuantitySelector({
                   min={1}
                   disabled={!hasStock}
                 />
-                <span className="text-sm text-gray-600">パック</span>
+                <span className="text-sm text-gray-600 whitespace-nowrap">パック</span>
                 <Button
                   variant="outline"
                   size="sm"
@@ -285,7 +286,7 @@ export function QuantitySelector({
               </div>
             )}
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 flex-nowrap">
               <Button
                 variant="outline"
                 size="sm"
@@ -308,7 +309,7 @@ export function QuantitySelector({
                 disabled={!hasStock}
               />
               
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-gray-600 whitespace-nowrap">
                 {getQuantityUnit()}
               </span>
               
@@ -331,26 +332,6 @@ export function QuantitySelector({
         )}
       </div>
 
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">
-            {selectedMethod === 'PIECE' ? 
-              `${pieceGrams}g × ${pieceCount}枚 × ${packCount}パック × ${basePrice}円` : 
-            selectedMethod === 'WEIGHT' ?
-              `${quantity}g × ${basePrice}円` :
-            selectedMethod === 'PACK' ?
-              `${unit} × ${quantity}パック × ${basePrice}円` :
-              '小計:'
-            }
-          </span>
-          <span className="text-lg font-bold text-red-600">
-            {new Intl.NumberFormat('ja-JP', {
-              style: 'currency',
-              currency: 'JPY',
-            }).format(calculateSubtotal(quantity))}
-          </span>
-        </div>
-      </div>
     </div>
   )
 }
