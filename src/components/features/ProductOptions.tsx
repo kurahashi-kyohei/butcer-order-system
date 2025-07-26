@@ -30,6 +30,21 @@ export function ProductOptions({
   const [remarks, setRemarks] = useState<string>('')
   const isFirstRender = useRef(true)
 
+  // 用途が変更されたときの処理
+  const handleUsageChange = (value: string) => {
+    setSelectedUsage(value)
+    // 焼肉以外の用途が選択された場合、味付けをなしに設定
+    if (value !== '焼肉') {
+      setSelectedFlavor('なし')
+    } else {
+      // 焼肉が選択された場合、味付けをリセット
+      setSelectedFlavor('')
+    }
+  }
+
+  // 味付けが有効かどうかを判定
+  const isFlavorEnabled = selectedUsage === '焼肉'
+
   // 状態が変更されたときに親コンポーネントに通知（初回レンダリングは除く）
   useEffect(() => {
     if (isFirstRender.current) {
@@ -58,7 +73,7 @@ export function ProductOptions({
             }))}
             placeholder="用途を選択してください"
             value={selectedUsage}
-            onChange={(e) => setSelectedUsage(e.target.value)}
+            onChange={(e) => handleUsageChange(e.target.value)}
           />
         </div>
       )}
@@ -66,17 +81,23 @@ export function ProductOptions({
       {hasFlavorOption && flavorOptions.length > 0 && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            味付け <span className="text-red-500">*</span>
+            味付け {isFlavorEnabled && <span className="text-red-500">*</span>}
           </label>
           <Select
             options={flavorOptions.map(option => ({
               value: option,
               label: option
             }))}
-            placeholder="味付けを選択してください"
+            placeholder={isFlavorEnabled ? "味付けを選択してください" : "用途が焼肉の場合のみ選択可能"}
             value={selectedFlavor}
             onChange={(e) => setSelectedFlavor(e.target.value)}
+            disabled={!isFlavorEnabled}
           />
+          {!isFlavorEnabled && selectedUsage && (
+            <p className="text-xs text-gray-500 mt-1">
+              選択された用途（{selectedUsage}）では味付けは「なし」になります
+            </p>
+          )}
         </div>
       )}
 

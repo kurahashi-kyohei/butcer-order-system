@@ -57,56 +57,65 @@ export function ProductGrid({ products, currentPage, totalPages, totalCount }: P
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
         {products.map((product) => (
-          <Card key={product.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <CardTitle className="text-lg mb-1 truncate">
-                    {product.name}
-                  </CardTitle>
-                  <p className="text-xs text-gray-500 mb-2">
-                    {product.category.name}
-                  </p>
-                </div>
+          <Card key={product.id} className="hover:shadow-lg transition-shadow duration-300">
+            <CardHeader>
+              <div className="aspect-square bg-gray-100 rounded-lg mb-4 flex items-center justify-center">
+                {product.imageUrl ? (
+                  <img
+                    src={product.imageUrl}
+                    alt={product.name}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                ) : (
+                  <span className="text-4xl">🥩</span>
+                )}
               </div>
+              <CardTitle className="text-sm md:text-lg line-clamp-2">{product.name}</CardTitle>
               {product.description && (
-                <p className="text-sm text-gray-600 line-clamp-2">
+                <p className="text-xs md:text-sm text-gray-600 line-clamp-2">
                   {product.description}
                 </p>
               )}
             </CardHeader>
             
-            <CardContent className="pt-0">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-red-600">
-                      {formatPrice(product.basePrice)}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {product.unit}あたり
-                    </p>
-                  </div>
+            <CardContent>
+              <div className="mb-4">
+                <div className="mb-2">
+                  <span className="text-xl md:text-2xl font-bold text-red-600">
+                    {formatPrice(product.basePrice)}
+                  </span>
+                  <span className="text-xs md:text-sm text-gray-500 ml-1">
+                    / {product.unit}
+                  </span>
                 </div>
-
-                {product.priceType === 'PACK' && product.stock !== null && (
-                  <p className="text-xs text-gray-600">
-                    在庫: {product.stock > 0 ? `${product.stock}個` : '在庫切れ'}
-                  </p>
+                {product.category && (
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                    {product.category.name}
+                  </span>
                 )}
-
-                <Link href={`/products/${product.id}`} className="block">
-                  <Button 
-                    className="w-full"
-                    size="sm"
-                    disabled={product.priceType === 'PACK' && product.stock === 0}
-                  >
-                    {product.priceType === 'PACK' && product.stock === 0 ? '在庫切れ' : '詳細を見る'}
-                  </Button>
-                </Link>
               </div>
+
+              {product.priceType === 'PACK' && product.stock !== null && product.stock <= 5 && (
+                <div className="mb-4">
+                  {product.stock === 0 ? (
+                    <span className="text-red-600 text-sm">在庫切れ</span>
+                  ) : (
+                    <span className="text-orange-600 text-sm">残り{product.stock}点</span>
+                  )}
+                </div>
+              )}
+
+              <Link href={`/products/${product.id}`}>
+                <Button 
+                  className="w-full text-xs md:text-sm"
+                  size="sm"
+                  disabled={product.priceType === 'PACK' && product.stock === 0}
+                >
+                  {product.priceType === 'PACK' && product.stock === 0 ? '在庫切れ' : '詳細'}
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         ))}
