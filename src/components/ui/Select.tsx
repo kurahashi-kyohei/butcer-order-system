@@ -10,11 +10,10 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, error, options, placeholder, ...props }, ref) => {
     return (
-      <div className="w-full">
+      <div className="w-full relative">
         <select
           className={clsx(
-            'flex h-12 sm:h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base sm:text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-            '[&>option]:text-base [&>option]:py-2 [&>option]:px-3 [&>option]:min-h-[44px] [&>option]:leading-relaxed',
+            'flex h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 pr-10 text-base ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none',
             error && 'border-red-500 focus-visible:ring-red-500',
             className
           )}
@@ -22,16 +21,21 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
           {...props}
         >
           {placeholder && (
-            <option value="" disabled className="text-base py-2 px-3 min-h-[44px] leading-relaxed">
+            <option value="" disabled>
               {placeholder}
             </option>
           )}
           {options.map((option) => (
-            <option key={option.value} value={option.value} className="text-base py-2 px-3 min-h-[44px] leading-relaxed">
+            <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
         </select>
+        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+          <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        </div>
         {error && (
           <p className="mt-1 text-sm text-red-600">{error}</p>
         )}

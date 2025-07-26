@@ -19,6 +19,11 @@ interface CartItemData {
   remarks?: string
   quantityMethod: 'WEIGHT' | 'PIECE' | 'PACK' | 'PIECE_COUNT'
   priceType: 'WEIGHT_BASED' | 'PACK'
+  pieceDetails?: {
+    pieceGrams?: number
+    pieceCount?: number
+    packCount?: number
+  }
 }
 
 export default function CartPage() {
@@ -54,8 +59,10 @@ export default function CartPage() {
                   selectedUsage: item.selectedUsage,
                   selectedFlavor: item.selectedFlavor,
                   remarks: item.remarks,
-                  quantityMethod: product.quantityMethod,
+                  quantityMethod: item.selectedMethod || 
+                    (Array.isArray(product.quantityMethods) ? product.quantityMethods[0] : 'WEIGHT'),
                   priceType: product.priceType,
+                  pieceDetails: item.pieceDetails,
                 }
               }
               return null
@@ -75,25 +82,6 @@ export default function CartPage() {
     }
   }
 
-  const updateCartQuantity = (itemId: string, newQuantity: number) => {
-    const updatedItems = cartItems.map(item => {
-      if (item.id === itemId) {
-        const newSubtotal = item.priceType === 'WEIGHT_BASED' 
-          ? Math.round((item.price * newQuantity) / 100)
-          : item.price * newQuantity
-        
-        return {
-          ...item,
-          quantity: newQuantity,
-          subtotal: newSubtotal
-        }
-      }
-      return item
-    })
-    
-    setCartItems(updatedItems)
-    saveCartToStorage(updatedItems)
-  }
 
   const removeCartItem = (itemId: string) => {
     const updatedItems = cartItems.filter(item => item.id !== itemId)
@@ -107,9 +95,11 @@ export default function CartPage() {
       quantity: item.quantity,
       price: item.price,
       subtotal: item.subtotal,
+      selectedMethod: item.quantityMethod,
       selectedUsage: item.selectedUsage,
       selectedFlavor: item.selectedFlavor,
       remarks: item.remarks,
+      pieceDetails: item.pieceDetails,
     }))
     sessionStorage.setItem('cart', JSON.stringify(storageItems))
   }
@@ -163,7 +153,7 @@ export default function CartPage() {
             <p className="text-gray-600 mb-8">
               お買い物を始めるために、商品一覧をご覧ください。
             </p>
-            <Link href="/">
+            <Link href="/products">
               <Button size="lg">
                 商品一覧を見る
               </Button>
@@ -173,7 +163,7 @@ export default function CartPage() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-start">
               <h2 className="text-xl font-semibold text-gray-900">
                 商品一覧 ({cartItems.length}点)
               </h2>
@@ -181,7 +171,7 @@ export default function CartPage() {
                 variant="outline"
                 size="sm"
                 onClick={clearCart}
-                className="text-red-600 hover:text-red-700 hover:border-red-300"
+                className="text-red-600 hover:text-red-700 hover:border-red-300 flex-shrink-0"
               >
                 カートを空にする
               </Button>
@@ -192,14 +182,13 @@ export default function CartPage() {
                 <CartItem
                   key={item.id}
                   item={item}
-                  onUpdateQuantity={updateCartQuantity}
                   onRemoveItem={removeCartItem}
                 />
               ))}
             </div>
 
             <div className="pt-6 border-t border-gray-200">
-              <Link href="/">
+              <Link href="/products">
                 <Button variant="outline">
                   買い物を続ける
                 </Button>
@@ -214,7 +203,8 @@ export default function CartPage() {
                   id: item.id,
                   quantity: item.quantity,
                   price: item.price,
-                  priceType: item.priceType
+                  priceType: item.priceType,
+                  subtotal: item.subtotal
                 }))}
                 className="mb-6"
               />
@@ -230,7 +220,7 @@ export default function CartPage() {
               </Button>
 
               <div className="mt-4 text-center">
-                <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">
+                <Link href="/products" className="text-sm text-gray-500 hover:text-gray-700">
                   買い物を続ける
                 </Link>
               </div>

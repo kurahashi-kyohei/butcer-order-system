@@ -78,6 +78,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
         selectedUsage: selectedOptions.selectedUsage,
         selectedFlavor: selectedOptions.selectedFlavor,
         remarks: remarks,
+        pieceDetails: selectedMethod === 'PIECE' ? pieceDetails : undefined,
       }
 
       // セッションストレージにカート情報を保存
@@ -86,7 +87,8 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
         item.productId === cartItem.productId &&
         item.selectedMethod === cartItem.selectedMethod &&
         item.selectedUsage === cartItem.selectedUsage &&
-        item.selectedFlavor === cartItem.selectedFlavor
+        item.selectedFlavor === cartItem.selectedFlavor &&
+        item.remarks === cartItem.remarks
       )
 
       if (existingItemIndex >= 0) {
@@ -177,6 +179,10 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
               <span>
                 {selectedMethod === 'PIECE' && pieceDetails.pieceGrams && pieceDetails.pieceCount && pieceDetails.packCount ? 
                   `${pieceDetails.pieceGrams}g × ${pieceDetails.pieceCount}枚 × ${pieceDetails.packCount}パック = ${quantity}g` :
+                selectedMethod === 'WEIGHT' && pieceDetails.packCount && pieceDetails.packCount > 1 ?
+                  `${quantity}g × ${pieceDetails.packCount}パック` :
+                selectedMethod === 'PIECE_COUNT' && pieceDetails.packCount && pieceDetails.packCount > 1 ?
+                  `${quantity}本 × ${pieceDetails.packCount}パック` :
                   `${quantity}${selectedMethod === 'WEIGHT' ? 'g' : 
                     selectedMethod === 'PACK' ? 'パック' : '本'}`
                 }
