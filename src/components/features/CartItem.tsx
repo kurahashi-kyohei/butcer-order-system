@@ -89,10 +89,24 @@ export function CartItem({ item, onRemoveItem }: CartItemProps) {
             <span>
               {item.pieceDetails.pieceGrams}g × {item.pieceDetails.pieceCount}枚 × {item.pieceDetails.packCount}パック = {item.quantity}g
             </span>
-          ) : item.quantityMethod === 'WEIGHT' && item.pieceDetails?.packCount && item.pieceDetails.packCount > 1 ? (
-            <span>{item.quantity}g × {item.pieceDetails.packCount}パック</span>
-          ) : item.quantityMethod === 'PIECE_COUNT' && item.pieceDetails?.packCount && item.pieceDetails.packCount > 1 ? (
-            <span>{item.quantity}本 × {item.pieceDetails.packCount}パック</span>
+          ) : item.quantityMethod === 'WEIGHT' && item.pieceDetails?.packCount ? (
+            <span>
+              {item.pieceDetails.packCount > 1 ? (
+                `${Math.round(item.quantity / item.pieceDetails.packCount)}g × ${item.pieceDetails.packCount}パック = ${item.quantity}g`
+              ) : (
+                `${item.quantity}g`
+              )}
+            </span>
+          ) : item.quantityMethod === 'PIECE_COUNT' && item.pieceDetails?.packCount ? (
+            <span>
+              {item.pieceDetails.packCount > 1 ? (
+                `${Math.round(item.quantity / item.pieceDetails.packCount)}本 × ${item.pieceDetails.packCount}パック = ${item.quantity}本`
+              ) : (
+                `${item.quantity}本`
+              )}
+            </span>
+          ) : item.quantityMethod === 'PACK' ? (
+            <span>{item.quantity}パック</span>
           ) : (
             <span>{item.quantity}{getQuantityUnit()}</span>
           )}
@@ -100,23 +114,9 @@ export function CartItem({ item, onRemoveItem }: CartItemProps) {
 
         <div className="text-right">
           <div className="text-sm text-gray-600">
-            {item.quantityMethod === 'PIECE' && item.pieceDetails ? (
-              <span>
-                {formatPrice(item.price)} × {item.pieceDetails.pieceCount}枚 × {item.pieceDetails.packCount}パック
-              </span>
-            ) : item.quantityMethod === 'WEIGHT' && item.pieceDetails?.packCount && item.pieceDetails.packCount > 1 ? (
-              <span>
-                {formatPrice(item.price)} × {item.quantity}g × {item.pieceDetails.packCount}パック
-              </span>
-            ) : item.quantityMethod === 'PIECE_COUNT' && item.pieceDetails?.packCount && item.pieceDetails.packCount > 1 ? (
-              <span>
-                {formatPrice(item.price)} × {item.quantity}本 × {item.pieceDetails.packCount}パック
-              </span>
-            ) : (
-              <span>
-                {formatPrice(item.price)} × {item.quantity}{getQuantityUnit()}
-              </span>
-            )}
+            <span>
+              合計: {formatPrice(item.subtotal)}
+            </span>
           </div>
           <div className="text-lg font-bold text-red-600">
             {formatPrice(item.subtotal)}

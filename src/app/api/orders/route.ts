@@ -8,6 +8,10 @@ const orderItemSchema = z.object({
   quantity: z.number().positive(),
   price: z.number().positive(),
   subtotal: z.number().positive(),
+  selectedMethod: z.string(),
+  pieceGrams: z.number().optional(),
+  pieceCount: z.number().optional(),
+  packCount: z.number().optional(),
   selectedUsage: z.string().optional(),
   selectedFlavor: z.string().optional(),
   remarks: z.string().optional(),
@@ -48,22 +52,27 @@ export async function POST(request: NextRequest) {
       })
 
       // 注文アイテムを作成
+      console.log('Creating order items with data:', validatedData.items)
       const orderItems = await Promise.all(
-        validatedData.items.map((item) =>
-          tx.orderItem.create({
+        validatedData.items.map((item) => {
+          console.log('Creating order item:', item)
+          return tx.orderItem.create({
             data: {
               orderId: newOrder.id,
               productId: item.productId,
               quantity: item.quantity,
               price: item.price,
               subtotal: item.subtotal,
-              selectedMethod: 'WEIGHT', // デフォルト値、実際の選択方法に応じて調整が必要
+              selectedMethod: item.selectedMethod,
+              pieceGrams: item.pieceGrams || null,
+              pieceCount: item.pieceCount || null,
+              packCount: item.packCount || null,
               usageOptionName: item.selectedUsage,
               flavorOptionName: item.selectedFlavor,
               remarks: item.remarks,
             },
           })
-        )
+        })
       )
 
       // 在庫管理は現在のスキーマでは未実装のためコメントアウト
@@ -154,9 +163,9 @@ export async function POST(request: NextRequest) {
     console.error('Error creating order:', error)
     
     if (error instanceof z.ZodError) {
-      console.error('Validation errors:', error.errors)
+      console.error('Validation errors:', error.issues)
       return NextResponse.json(
-        { error: 'バリデーションエラー', details: error.errors },
+        { error: 'バリデーションエラー', details: error.issues },
         { status: 400 }
       )
     }

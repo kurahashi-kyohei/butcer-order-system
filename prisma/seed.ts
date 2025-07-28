@@ -73,7 +73,7 @@ async function main() {
     { name: '加工品', slug: 'processed-foods', sortOrder: 8 }
   ]
 
-  const createdCategories = {}
+  const createdCategories: Record<string, any> = {}
   for (const categoryData of categories) {
     const category = await prisma.category.upsert({
       where: { slug: categoryData.slug },
@@ -921,20 +921,6 @@ async function main() {
       hasRemarks: false,
       hasStock: true
     },
-    {
-      id: 'r-pork-wiener-processed',
-      name: 'Rポークウインナー',
-      description: 'Rポークウインナーです。1本約20g。',
-      priceType: 'WEIGHT_BASED' as const,
-      basePrice: 150,
-      unit: '本',
-      categories: ['yakiniku', 'processed-foods'],
-      usageOptionIds: '',
-      flavorOptionIds: '',
-      quantityMethods: 'PIECE_COUNT',
-      hasRemarks: false,
-      hasStock: true
-    }
   ]
 
   // 各商品を作成

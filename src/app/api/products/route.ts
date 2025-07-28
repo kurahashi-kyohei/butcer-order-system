@@ -12,7 +12,13 @@ export async function GET(request: Request) {
 
     const where = {
       isActive: true,
-      ...(categoryId && { categoryId })
+      ...(categoryId && { 
+        categories: {
+          some: {
+            categoryId: categoryId
+          }
+        }
+      })
     }
 
     // ソート条件を構築
@@ -38,11 +44,15 @@ export async function GET(request: Request) {
       prisma.product.findMany({
         where,
         include: {
-          category: {
-            select: {
-              id: true,
-              name: true,
-              slug: true
+          categories: {
+            include: {
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true
+                }
+              }
             }
           }
         },
