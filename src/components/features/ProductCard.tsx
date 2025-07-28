@@ -11,7 +11,7 @@ interface Product {
   unit: string
   imageUrl?: string
   isActive: boolean
-  stock?: number
+  hasStock?: boolean
   categories?: {
     id: string
     name: string
@@ -40,12 +40,8 @@ export function ProductCard({ product }: ProductCardProps) {
   }
 
   const getStockDisplay = () => {
-    if (product.priceType === 'PACK' && product.stock !== null) {
-      if (product.stock === 0) {
-        return <span className="text-red-600 text-sm">在庫切れ</span>
-      } else if (product.stock <= 5) {
-        return <span className="text-orange-600 text-sm">残り{product.stock}点</span>
-      }
+    if (product.hasStock === false) {
+      return <span className="text-red-600 text-sm">在庫切れ</span>
     }
     return null
   }

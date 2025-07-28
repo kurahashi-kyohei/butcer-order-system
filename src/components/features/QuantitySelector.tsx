@@ -104,16 +104,20 @@ export function QuantitySelector({
       onQuantityChange(totalQuantity, subtotal, selectedMethod, { pieceGrams, pieceCount, packCount })
     } else if (selectedMethod === 'WEIGHT' || selectedMethod === 'PIECE_COUNT') {
       // 重量選択や本数選択時もパック数の変更を反映
+      const totalQuantity = quantity * packCount
       const subtotal = calculateSubtotal(quantity, selectedMethod)
-      onQuantityChange(quantity, subtotal, selectedMethod, { packCount })
+      onQuantityChange(totalQuantity, subtotal, selectedMethod, { packCount })
     }
   }, [pieceGrams, pieceCount, packCount, selectedMethod, quantity])
 
   // 初期値を親コンポーネントに通知
   useEffect(() => {
-    const initialQuantity = selectedMethod === 'WEIGHT' ? 100 : 
-                           selectedMethod === 'PIECE' ? pieceGrams * pieceCount * packCount : 1
-    const initialSubtotal = calculateSubtotal(initialQuantity)
+    const baseQuantity = selectedMethod === 'WEIGHT' ? 100 : 
+                        selectedMethod === 'PIECE' ? pieceGrams : 1
+    const initialQuantity = selectedMethod === 'PIECE' ? pieceGrams * pieceCount * packCount :
+                           selectedMethod === 'WEIGHT' || selectedMethod === 'PIECE_COUNT' ? baseQuantity * packCount :
+                           baseQuantity
+    const initialSubtotal = calculateSubtotal(baseQuantity)
     const details = selectedMethod === 'PIECE' ? { pieceGrams, pieceCount, packCount } : 
                    selectedMethod === 'WEIGHT' || selectedMethod === 'PIECE_COUNT' ? { packCount } : undefined
     onQuantityChange(initialQuantity, initialSubtotal, selectedMethod, details)
@@ -145,8 +149,9 @@ export function QuantitySelector({
 
     setQuantity(newQuantity)
     const subtotal = calculateSubtotal(newQuantity)
+    const totalQuantity = selectedMethod === 'WEIGHT' || selectedMethod === 'PIECE_COUNT' ? newQuantity * packCount : newQuantity
     const details = selectedMethod === 'WEIGHT' || selectedMethod === 'PIECE_COUNT' ? { packCount } : undefined
-    onQuantityChange(newQuantity, subtotal, selectedMethod, details)
+    onQuantityChange(totalQuantity, subtotal, selectedMethod, details)
   }
 
   const getPresetOptions = () => {

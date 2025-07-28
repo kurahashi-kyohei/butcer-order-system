@@ -21,7 +21,15 @@ export async function PATCH(
     const data = await request.json()
     
     // 更新データのバリデーション
-    const updateData: any = {}
+    const updateData: {
+      name?: string
+      description?: string | null
+      basePrice?: number
+      unit?: string
+      imageUrl?: string | null
+      hasStock?: boolean
+      isActive?: boolean
+    } = {}
     
     if (data.name !== undefined) updateData.name = data.name
     if (data.description !== undefined) updateData.description = data.description || null
@@ -30,17 +38,20 @@ export async function PATCH(
     if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl || null
     if (data.hasStock !== undefined) updateData.hasStock = data.hasStock
     if (data.isActive !== undefined) updateData.isActive = data.isActive
-    if (data.categoryId !== undefined) updateData.categoryId = data.categoryId
 
     const updatedProduct = await prisma.product.update({
       where: { id },
       data: updateData,
       include: {
-        category: {
-          select: {
-            id: true,
-            name: true,
-            slug: true
+        categories: {
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+                slug: true
+              }
+            }
           }
         }
       }

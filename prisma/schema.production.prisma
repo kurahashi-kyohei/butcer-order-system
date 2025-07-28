@@ -12,36 +12,35 @@ datasource db {
 }
 
 model Category {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  slug      String    @unique
-  sortOrder Int       @default(0)
-  isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  products  Product[]
+  id        String            @id @default(cuid())
+  name      String            @unique
+  slug      String            @unique
+  sortOrder Int               @default(0)
+  isActive  Boolean           @default(true)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  products  ProductCategory[]
 }
 
 model Product {
-  id              String         @id @default(cuid())
+  id              String            @id @default(cuid())
   name            String
   description     String?
-  priceType       PriceType      // WEIGHT_BASED, PACK
-  basePrice       Int            // 重量単価商品は100g単位の価格、パック商品は固定価格
-  unit            String         // "100g" または "パック"
+  priceType       PriceType         // WEIGHT_BASED, PACK
+  basePrice       Int               // 重量単価商品は100g単位の価格、パック商品は固定価格
+  unit            String            // "100g" または "パック"
   imageUrl        String?
-  isActive        Boolean        @default(true)
-  stock           Int?           // 在庫数（パック商品用）
+  isActive        Boolean           @default(true)
+  hasStock        Boolean           @default(true) // 在庫有無
   // 商品オプション設定（ID参照方式）
-  usageOptionIds  String?        // カンマ区切りのオプションID "id1,id2,id3"
-  flavorOptionIds String?        // カンマ区切りのオプションID "id1,id2,id3"
-  quantityMethod  QuantityMethod @default(WEIGHT) // 数量・個数指定方法
-  hasRemarks      Boolean        @default(false)  // 備考欄の有無
-  categoryId      String
-  category        Category       @relation(fields: [categoryId], references: [id])
+  usageOptionIds  String?           // カンマ区切りのオプションID "id1,id2,id3"
+  flavorOptionIds String?           // カンマ区切りのオプションID "id1,id2,id3"
+  quantityMethods String            @default("WEIGHT") // 数量・個数指定方法（カンマ区切り）
+  hasRemarks      Boolean           @default(false)  // 備考欄の有無
+  categories      ProductCategory[]
   orderItems      OrderItem[]
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 }
 
 model Order {
@@ -64,6 +63,11 @@ model OrderItem {
   quantity          Int     // 重量商品はグラム数、パック商品は個数
   price             Int     // 商品単価
   subtotal          Int     // 小計
+  selectedMethod    String  // 選択された数量選択方法
+  // 数量詳細情報
+  pieceGrams        Int?    // 1枚あたりのグラム数（枚数選択時）
+  pieceCount        Int?    // 枚数（枚数選択時）
+  packCount         Int?    // パック数（重量・枚数・本数選択時）
   // 選択されたオプション
   usageOptionId     String? // 選択された用途オプションID
   usageOptionName   String? // 選択された用途オプション名（表示用）
@@ -119,6 +123,17 @@ enum OrderStatus {
   READY       // 準備完了
   COMPLETED   // 受け取り完了
   CANCELLED   // キャンセル
+}
+
+model ProductCategory {
+  id         String   @id @default(cuid())
+  productId  String
+  categoryId String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  
+  @@unique([productId, categoryId])
 }
 
 enum Role {

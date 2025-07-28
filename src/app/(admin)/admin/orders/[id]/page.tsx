@@ -28,7 +28,7 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
               name: true,
               unit: true,
               priceType: true,
-              quantityMethod: true
+              quantityMethods: true
             }
           }
         }

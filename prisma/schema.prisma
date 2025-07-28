@@ -67,6 +67,10 @@ model OrderItem {
   price             Int     // 商品単価
   subtotal          Int     // 小計
   selectedMethod    String  // 選択された数量選択方法
+  // 数量詳細情報
+  pieceGrams        Int?    // 1枚あたりのグラム数（枚数選択時）
+  pieceCount        Int?    // 枚数（枚数選択時）
+  packCount         Int?    // パック数（重量・枚数・本数選択時）
   // 選択されたオプション
   usageOptionId     String? // 選択された用途オプションID
   usageOptionName   String? // 選択された用途オプション名（表示用）

@@ -62,6 +62,7 @@ async function getProduct(id: string) {
 
   return {
     ...product,
+    category: product.categories.length > 0 ? product.categories[0].category : { id: '', name: '', slug: '' },
     categories: product.categories.map(pc => pc.category),
     hasUsageOption,
     usageOptions,

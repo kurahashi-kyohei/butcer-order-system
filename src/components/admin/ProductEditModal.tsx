@@ -16,12 +16,11 @@ interface Product {
   imageUrl?: string | null
   isActive: boolean
   hasStock: boolean
-  categoryId: string
-  category: {
+  categories: {
     id: string
     name: string
     slug: string
-  }
+  }[]
 }
 
 interface Category {
@@ -55,7 +54,7 @@ export function ProductEditModal({
     imageUrl: product.imageUrl || '',
     hasStock: product.hasStock,
     isActive: product.isActive,
-    categoryId: product.categoryId
+    categoryId: product.categories.length > 0 ? product.categories[0].id : ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -69,7 +68,7 @@ export function ProductEditModal({
         imageUrl: product.imageUrl || '',
         hasStock: product.hasStock,
         isActive: product.isActive,
-        categoryId: product.categoryId
+        categoryId: product.categories.length > 0 ? product.categories[0].id : ''
       })
     }
   }, [isOpen, product])
@@ -101,7 +100,7 @@ export function ProductEditModal({
     }
   }
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: string, value: string | number | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
