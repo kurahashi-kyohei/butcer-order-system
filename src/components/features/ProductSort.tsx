@@ -2,13 +2,14 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 
-export type SortOption = 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'created-desc' | 'created-asc'
+export type SortOption = 'default' | 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'created-desc' | 'created-asc'
 
 interface ProductSortProps {
   currentSort?: SortOption
 }
 
 const sortOptions: { value: SortOption; label: string }[] = [
+  { value: 'default', label: 'おすすめ順' },
   { value: 'name-asc', label: '商品名（昇順）' },
   { value: 'name-desc', label: '商品名（降順）' },
   { value: 'price-asc', label: '価格（安い順）' },
@@ -17,7 +18,7 @@ const sortOptions: { value: SortOption; label: string }[] = [
   { value: 'created-asc', label: '古い順' }
 ]
 
-export function ProductSort({ currentSort = 'name-asc' }: ProductSortProps) {
+export function ProductSort({ currentSort = 'default' }: ProductSortProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
 

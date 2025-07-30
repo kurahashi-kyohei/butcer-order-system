@@ -14,7 +14,7 @@ interface PageProps {
 export default async function ProductsPage({ searchParams }: PageProps) {
   const currentPage = parseInt(searchParams.page || '1')
   const categorySlug = searchParams.categorySlug
-  const sort = (searchParams.sort || 'name-asc') as SortOption
+  const sort = (searchParams.sort || 'default') as SortOption
   const limit = 12
 
   // カテゴリスラッグから該当するカテゴリを取得
@@ -47,8 +47,11 @@ export default async function ProductsPage({ searchParams }: PageProps) {
       case 'created-asc':
         return [{ createdAt: 'asc' as const }]
       case 'name-asc':
-      default:
         return [{ name: 'asc' as const }]
+      case 'default':
+      default:
+        // デフォルトは優先順位順（1が最高優先度）、次に名前順
+        return [{ priority: 'asc' as const }, { name: 'asc' as const }]
     }
   }
 

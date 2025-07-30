@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
-import { Select } from '@/components/ui/Select'
+import { CustomSelect } from '@/components/ui/CustomSelect'
 import { Input } from '@/components/ui/Input'
 
 interface OrderFiltersProps {
@@ -61,7 +61,7 @@ export function OrderFilters({ currentStatus, currentDate }: OrderFiltersProps) 
           <label className="block text-sm font-medium text-gray-700 mb-2">
             ステータス
           </label>
-          <Select
+          <CustomSelect
             value={currentStatus || 'ALL'}
             onChange={(e) => handleStatusChange(e.target.value)}
             options={statusOptions}

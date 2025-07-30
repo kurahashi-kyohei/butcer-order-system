@@ -11,6 +11,8 @@ interface PageProps {
     status?: string
     date?: string
     page?: string
+    sortBy?: string
+    sortOrder?: 'asc' | 'desc'
   }
 }
 
@@ -24,6 +26,8 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
   const currentPage = parseInt(searchParams.page || '1')
   const status = searchParams.status
   const dateFilter = searchParams.date
+  const sortBy = searchParams.sortBy || 'createdAt'
+  const sortOrder = searchParams.sortOrder || 'desc'
   const limit = 20
 
   // フィルタ条件を構築
@@ -44,6 +48,24 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
     }
   }
 
+  // ソート条件を構築
+  const getOrderBy = () => {
+    switch (sortBy) {
+      case 'orderNumber':
+        return { orderNumber: sortOrder }
+      case 'customerName':
+        return { customerName: sortOrder }
+      case 'pickupDate':
+        return { pickupDate: sortOrder }
+      case 'totalAmount':
+        return { totalAmount: sortOrder }
+      case 'status':
+        return { status: sortOrder }
+      default:
+        return { createdAt: sortOrder }
+    }
+  }
+
   const [orders, totalCount] = await Promise.all([
     prisma.order.findMany({
       where,
@@ -56,7 +78,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
           }
         }
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: getOrderBy(),
       skip: (currentPage - 1) * limit,
       take: limit
     }),
@@ -85,6 +107,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
           currentPage={currentPage}
           totalPages={totalPages}
           totalCount={totalCount}
+          currentSort={{ sortBy, sortOrder }}
         />
       </main>
     </>
