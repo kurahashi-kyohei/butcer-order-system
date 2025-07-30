@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     const categoryId = searchParams.get('categoryId')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '12')
-    const sort = searchParams.get('sort') || 'name-asc'
+    const sort = searchParams.get('sort') || 'default'
     const skip = (page - 1) * limit
 
     const where = {
@@ -35,8 +35,10 @@ export async function GET(request: Request) {
         case 'created-asc':
           return [{ createdAt: 'asc' as const }]
         case 'name-asc':
-        default:
           return [{ name: 'asc' as const }]
+        default:
+          // デフォルトは優先順位順（1が最高優先度）、次に名前順
+          return [{ priority: 'asc' as const }, { name: 'asc' as const }]
       }
     }
 

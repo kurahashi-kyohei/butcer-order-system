@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { Select } from '@/components/ui/Select'
+import { CustomSelect } from '@/components/ui/CustomSelect'
 
 interface OrderItem {
   id: string
@@ -265,7 +265,7 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 注文ステータス
               </label>
-              <Select
+              <CustomSelect
                 value={currentStatus}
                 onChange={(e) => setCurrentStatus(e.target.value)}
                 options={statusOptions}

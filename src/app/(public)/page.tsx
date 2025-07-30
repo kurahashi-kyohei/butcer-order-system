@@ -19,10 +19,12 @@ async function getCategories() {
 }
 
 async function getFeaturedProducts() {
+  // 優先順位1の商品のみを取得
   const products = await prisma.product.findMany({
     where: { 
       isActive: true,
-      hasStock: true
+      hasStock: true,
+      priority: 1  // 優先順位1の商品のみ
     },
     include: {
       categories: {
@@ -38,7 +40,7 @@ async function getFeaturedProducts() {
       }
     },
     orderBy: { name: 'asc' },
-    take: 6
+    take: 8
   })
 
   return products.map(product => ({
@@ -143,12 +145,13 @@ export default async function Home() {
               おすすめ商品
             </h2>
             <p className="text-lg text-gray-600">
-              厳選された人気商品をご紹介します
+              厳選された特におすすめの商品をご紹介します
             </p>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {featuredProducts.map((product) => (
+          {featuredProducts.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {featuredProducts.map((product) => (
               <Card key={product.id} className="hover:shadow-lg transition-shadow duration-300">
                 <CardHeader className="p-3">
                   <div className="aspect-square bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
@@ -199,15 +202,27 @@ export default async function Home() {
                 </CardContent>
               </Card>
             ))}
-          </div>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500 mb-6">現在おすすめ商品はありません</p>
+              <Link href="/products">
+                <Button>
+                  すべての商品を見る
+                </Button>
+              </Link>
+            </div>
+          )}
           
-          <div className="text-center mt-12">
-            <Link href="/products">
-              <Button variant="outline" size="lg">
-                すべての商品を見る
-              </Button>
-            </Link>
-          </div>
+          {featuredProducts.length > 0 && (
+            <div className="text-center mt-12">
+              <Link href="/products">
+                <Button variant="outline" size="lg">
+                  すべての商品を見る
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 
