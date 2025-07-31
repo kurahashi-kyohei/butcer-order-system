@@ -7,11 +7,19 @@ export default withAuth(
   {
     callbacks: {
       authorized: ({ token, req }) => {
-        // 管理者ページは認証が必要
-        if (req.nextUrl.pathname.startsWith('/admin') && 
-            !req.nextUrl.pathname.startsWith('/admin/login')) {
-          return !!token
+        const path = req.nextUrl.pathname
+        
+        // ログインページは常にアクセス可能
+        if (path.startsWith('/admin/login')) {
+          return true
         }
+        
+        // 他の管理者ページは認証が必要
+        if (path.startsWith('/admin')) {
+          return !!token && token.role === 'ADMIN'
+        }
+        
+        // その他のページは自由にアクセス可能
         return true
       },
     },

@@ -20,36 +20,22 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      console.log('Login attempt:', { email })
+      // NextAuthの標準的な方法でリダイレクトを含むサインイン
       const result = await signIn('credentials', {
         email,
         password,
-        redirect: false,
+        callbackUrl: '/admin/dashboard'
       })
-
-      console.log('SignIn result:', result)
-
-      if (result?.error) {
-        console.log('SignIn error:', result.error)
+      
+      // NextAuthが自動的にリダイレクトするので、エラーの場合のみ処理
+      if (result && result.error) {
         setError('メールアドレスまたはパスワードが正しくありません')
-      } else {
-        console.log('SignIn successful, checking session...')
-        const session = await getSession()
-        console.log('Session:', session)
-        
-        if (session) {
-          console.log('Session found, redirecting to dashboard')
-          // より確実な遷移のために、window.locationを使用
-          window.location.href = '/admin/dashboard'
-        } else {
-          console.log('No session found after login')
-          setError('セッションの作成に失敗しました')
-        }
+        setIsLoading(false)
       }
+      // 成功の場合はNextAuthが自動的にリダイレクトするので何もしない
+      
     } catch (error) {
-      console.error('Login error:', error)
       setError('ログインに失敗しました。もう一度お試しください。')
-    } finally {
       setIsLoading(false)
     }
   }
@@ -88,7 +74,7 @@ export default function LoginPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@butcher-maruko.com"
+                    placeholder="メールアドレスを入力"
                   />
                 </div>
               </div>
@@ -128,13 +114,6 @@ export default function LoginPage() {
             </form>
           </CardContent>
         </Card>
-        
-        <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
-            デフォルト管理者アカウント:<br />
-            admin@butcher-maruko.com / admin123
-          </p>
-        </div>
       </div>
     </div>
   )
