@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { sendOrderCompletionEmail, type OrderEmailData } from '@/lib/email'
 
 const orderItemSchema = z.object({
   productId: z.string(),
   quantity: z.number().positive(),
   price: z.number().positive(),
   subtotal: z.number().positive(),
+  selectedMethod: z.string(),
+  pieceGrams: z.number().optional(),
+  pieceCount: z.number().optional(),
+  packCount: z.number().optional(),
   selectedUsage: z.string().optional(),
   selectedFlavor: z.string().optional(),
   remarks: z.string().optional(),
@@ -47,24 +52,32 @@ export async function POST(request: NextRequest) {
       })
 
       // 注文アイテムを作成
+      console.log('Creating order items with data:', validatedData.items)
       const orderItems = await Promise.all(
-        validatedData.items.map((item) =>
-          tx.orderItem.create({
+        validatedData.items.map((item) => {
+          console.log('Creating order item:', item)
+          return tx.orderItem.create({
             data: {
               orderId: newOrder.id,
               productId: item.productId,
               quantity: item.quantity,
               price: item.price,
               subtotal: item.subtotal,
-              selectedUsage: item.selectedUsage,
-              selectedFlavor: item.selectedFlavor,
+              selectedMethod: item.selectedMethod,
+              pieceGrams: item.pieceGrams || null,
+              pieceCount: item.pieceCount || null,
+              packCount: item.packCount || null,
+              usageOptionName: item.selectedUsage,
+              flavorOptionName: item.selectedFlavor,
               remarks: item.remarks,
             },
           })
-        )
+        })
       )
 
-      // 在庫を更新（パック商品のみ）
+      // 在庫管理は現在のスキーマでは未実装のためコメントアウト
+      // 将来的に在庫管理機能を追加する場合は、Productモデルにstockフィールドを追加してください
+      /*
       await Promise.all(
         validatedData.items.map(async (item) => {
           const product = await tx.product.findUnique({
@@ -81,6 +94,7 @@ export async function POST(request: NextRequest) {
           }
         })
       )
+      */
 
       return {
         ...newOrder,
@@ -88,14 +102,70 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // 注文完了メールを送信
+    try {
+      const emailData: OrderEmailData = {
+        customerName: order.customerName,
+        customerEmail: order.customerEmail,
+        orderNumber: order.orderNumber,
+        pickupDate: order.pickupDate,
+        pickupTime: order.pickupTime,
+        orderItems: order.orderItems.map(item => ({
+          product: {
+            name: '', // プロダクト名は別途取得が必要
+            quantityMethod: item.selectedMethod
+          },
+          quantity: item.quantity,
+          selectedUsage: item.usageOptionName || undefined,
+          selectedFlavor: item.flavorOptionName || undefined,
+          remarks: item.remarks || undefined
+        })),
+        totalAmount: order.totalAmount
+      }
+
+      // プロダクト情報を取得してメールデータに追加
+      const productsWithDetails = await Promise.all(
+        order.orderItems.map(async (item) => {
+          const product = await prisma.product.findUnique({
+            where: { id: item.productId },
+            select: { name: true, quantityMethods: true }
+          })
+          return {
+            ...item,
+            product: {
+              name: product?.name || '',
+              quantityMethod: item.selectedMethod || (product?.quantityMethods ? product.quantityMethods.split(',')[0] : 'WEIGHT')
+            }
+          }
+        })
+      )
+
+      const emailDataWithProducts: OrderEmailData = {
+        ...emailData,
+        orderItems: productsWithDetails.map(item => ({
+          product: item.product,
+          quantity: item.quantity,
+          selectedUsage: item.usageOptionName || undefined,
+          selectedFlavor: item.flavorOptionName || undefined,
+          remarks: item.remarks || undefined
+        }))
+      }
+
+      await sendOrderCompletionEmail(emailDataWithProducts)
+      console.log('Order completion email sent successfully')
+    } catch (emailError) {
+      console.error('Failed to send order completion email:', emailError)
+      // メール送信エラーは注文作成の成功に影響しないようにする
+    }
+
     return NextResponse.json(order, { status: 201 })
   } catch (error) {
     console.error('Error creating order:', error)
     
     if (error instanceof z.ZodError) {
-      console.error('Validation errors:', error.errors)
+      console.error('Validation errors:', error.issues)
       return NextResponse.json(
-        { error: 'バリデーションエラー', details: error.errors },
+        { error: 'バリデーションエラー', details: error.issues },
         { status: 400 }
       )
     }
@@ -132,7 +202,7 @@ export async function GET(request: NextRequest) {
                 select: {
                   name: true,
                   unit: true,
-                  quantityMethod: true,
+                  quantityMethods: true,
                 }
               }
             }
@@ -147,7 +217,21 @@ export async function GET(request: NextRequest) {
         )
       }
 
-      return NextResponse.json(order)
+      // フロントエンドが期待するフィールド名に変換
+      const transformedOrder = {
+        ...order,
+        orderItems: order.orderItems.map(item => ({
+          ...item,
+          selectedUsage: item.usageOptionName,
+          selectedFlavor: item.flavorOptionName,
+          product: {
+            ...item.product,
+            quantityMethod: item.selectedMethod || (typeof item.product.quantityMethods === 'string' ? item.product.quantityMethods.split(',')[0] : 'WEIGHT')
+          }
+        }))
+      }
+
+      return NextResponse.json(transformedOrder)
     }
 
     // 全注文を取得（管理者用）

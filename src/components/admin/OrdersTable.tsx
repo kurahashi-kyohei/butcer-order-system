@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Pagination } from '@/components/ui/Pagination'
@@ -37,10 +38,56 @@ interface OrdersTableProps {
   currentPage: number
   totalPages: number
   totalCount: number
+  currentSort: {
+    sortBy: string
+    sortOrder: 'asc' | 'desc'
+  }
 }
 
-export function OrdersTable({ orders, currentPage, totalPages, totalCount }: OrdersTableProps) {
-  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
+export function OrdersTable({ orders, currentPage, totalPages, totalCount, currentSort }: OrdersTableProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const handleSort = (field: string) => {
+    const params = new URLSearchParams(searchParams.toString())
+    
+    if (currentSort.sortBy === field) {
+      // 同じフィールドの場合は順序を反転
+      params.set('sortOrder', currentSort.sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      // 異なるフィールドの場合は新しいフィールドでasc
+      params.set('sortBy', field)
+      params.set('sortOrder', 'asc')
+    }
+    
+    // ページを1にリセット
+    params.delete('page')
+    router.push(`?${params.toString()}`)
+  }
+
+  const getSortIcon = (field: string) => {
+    if (currentSort.sortBy !== field) {
+      return (
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      )
+    }
+    
+    if (currentSort.sortOrder === 'asc') {
+      return (
+        <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+        </svg>
+      )
+    } else {
+      return (
+        <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
+        </svg>
+      )
+    }
+  }
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('ja-JP', {
@@ -89,49 +136,6 @@ export function OrdersTable({ orders, currentPage, totalPages, totalCount }: Ord
     }
   }
 
-  const handleStatusUpdate = async (orderId: string, newStatus: string) => {
-    setUpdatingStatus(orderId)
-    
-    try {
-      const response = await fetch(`/api/admin/orders/${orderId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
-      })
-
-      if (response.ok) {
-        // ページをリロードしてデータを更新
-        window.location.reload()
-      } else {
-        alert('ステータスの更新に失敗しました')
-      }
-    } catch (error) {
-      console.error('Status update error:', error)
-      alert('ステータスの更新に失敗しました')
-    } finally {
-      setUpdatingStatus(null)
-    }
-  }
-
-  const getNextStatus = (currentStatus: string) => {
-    switch (currentStatus) {
-      case 'PENDING': return 'PREPARING'
-      case 'PREPARING': return 'READY'
-      case 'READY': return 'COMPLETED'
-      default: return null
-    }
-  }
-
-  const getNextStatusLabel = (currentStatus: string) => {
-    switch (currentStatus) {
-      case 'PENDING': return '準備開始'
-      case 'PREPARING': return '準備完了'
-      case 'READY': return '受け取り完了'
-      default: return null
-    }
-  }
 
   if (orders.length === 0) {
     return (
@@ -160,25 +164,55 @@ export function OrdersTable({ orders, currentPage, totalPages, totalCount }: Ord
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[800px]">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    注文情報
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap min-w-[120px]">
+                    <button
+                      onClick={() => handleSort('orderNumber')}
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                    >
+                      <span>注文情報</span>
+                      {getSortIcon('orderNumber')}
+                    </button>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    お客様
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap min-w-[140px]">
+                    <button
+                      onClick={() => handleSort('customerName')}
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                    >
+                      <span>お客様</span>
+                      {getSortIcon('customerName')}
+                    </button>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    受け取り予定
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap min-w-[100px]">
+                    <button
+                      onClick={() => handleSort('pickupDate')}
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                    >
+                      <span>受け取り予定</span>
+                      {getSortIcon('pickupDate')}
+                    </button>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    金額
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap min-w-[80px]">
+                    <button
+                      onClick={() => handleSort('totalAmount')}
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                    >
+                      <span>金額</span>
+                      {getSortIcon('totalAmount')}
+                    </button>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    ステータス
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap min-w-[90px]">
+                    <button
+                      onClick={() => handleSort('status')}
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                    >
+                      <span>ステータス</span>
+                      {getSortIcon('status')}
+                    </button>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap min-w-[140px]">
                     アクション
                   </th>
                 </tr>
@@ -186,7 +220,7 @@ export function OrdersTable({ orders, currentPage, totalPages, totalCount }: Ord
               <tbody className="divide-y divide-gray-200">
                 {orders.map((order) => (
                   <tr key={order.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-4">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <div>
                         <p className="text-sm font-medium text-gray-900">
                           {order.orderNumber}
@@ -200,11 +234,11 @@ export function OrdersTable({ orders, currentPage, totalPages, totalCount }: Ord
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 whitespace-nowrap">
                           {order.customerName}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500 whitespace-nowrap">
                           {order.customerPhone}
                         </p>
                         <p className="text-xs text-gray-500 truncate max-w-32">
@@ -212,7 +246,7 @@ export function OrdersTable({ orders, currentPage, totalPages, totalCount }: Ord
                         </p>
                       </div>
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <div>
                         <p className="text-sm text-gray-900">
                           {formatDate(order.pickupDate)}
@@ -222,35 +256,22 @@ export function OrdersTable({ orders, currentPage, totalPages, totalCount }: Ord
                         </p>
                       </div>
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <p className="text-sm font-bold text-red-600">
                         {formatPrice(order.totalAmount)}
                       </p>
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
                         {getStatusLabel(order.status)}
                       </span>
                     </td>
                     <td className="px-4 py-4">
-                      <div className="flex space-x-2">
-                        <Link href={`/admin/orders/${order.id}`}>
-                          <Button variant="outline" size="sm">
-                            詳細
-                          </Button>
-                        </Link>
-                        
-                        {getNextStatus(order.status) && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleStatusUpdate(order.id, getNextStatus(order.status)!)}
-                            disabled={updatingStatus === order.id}
-                            isLoading={updatingStatus === order.id}
-                          >
-                            {getNextStatusLabel(order.status)}
-                          </Button>
-                        )}
-                      </div>
+                      <Link href={`/admin/orders/${order.id}`}>
+                        <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs">
+                          詳細
+                        </Button>
+                      </Link>
                     </td>
                   </tr>
                 ))}

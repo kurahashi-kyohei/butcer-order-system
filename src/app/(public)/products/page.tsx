@@ -1,17 +1,20 @@
 import { prisma } from '@/lib/prisma'
 import { ProductGrid } from '@/components/features/ProductGrid'
 import { CategoryFilter } from '@/components/features/CategoryFilter'
+import { ProductSort, SortOption } from '@/components/features/ProductSort'
 
 interface PageProps {
   searchParams: {
     categorySlug?: string
     page?: string
+    sort?: string
   }
 }
 
 export default async function ProductsPage({ searchParams }: PageProps) {
   const currentPage = parseInt(searchParams.page || '1')
   const categorySlug = searchParams.categorySlug
+  const sort = (searchParams.sort || 'default') as SortOption
   const limit = 12
 
   // カテゴリスラッグから該当するカテゴリを取得
@@ -28,6 +31,28 @@ export default async function ProductsPage({ searchParams }: PageProps) {
         }
       }
     })
+  }
+
+  // ソート条件を構築
+  const getOrderBy = (sortValue: SortOption) => {
+    switch (sortValue) {
+      case 'name-desc':
+        return [{ name: 'desc' as const }]
+      case 'price-asc':
+        return [{ basePrice: 'asc' as const }]
+      case 'price-desc':
+        return [{ basePrice: 'desc' as const }]
+      case 'created-desc':
+        return [{ createdAt: 'desc' as const }]
+      case 'created-asc':
+        return [{ createdAt: 'asc' as const }]
+      case 'name-asc':
+        return [{ name: 'asc' as const }]
+      case 'default':
+      default:
+        // デフォルトは優先順位順（1が最高優先度）、次に名前順
+        return [{ priority: 'asc' as const }, { name: 'asc' as const }]
+    }
   }
 
   const [products, categories, totalCount] = await Promise.all([
@@ -47,9 +72,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
           }
         }
       },
-      orderBy: [
-        { name: 'asc' }
-      ],
+      orderBy: getOrderBy(sort),
       skip: (currentPage - 1) * limit,
       take: limit
     }),
@@ -87,6 +110,8 @@ export default async function ProductsPage({ searchParams }: PageProps) {
         categories={categories}
         selectedCategorySlug={categorySlug}
       />
+
+      <ProductSort currentSort={sort} />
 
       <ProductGrid 
         products={transformedProducts}

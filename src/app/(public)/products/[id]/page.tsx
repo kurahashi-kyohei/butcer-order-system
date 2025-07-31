@@ -62,6 +62,7 @@ async function getProduct(id: string) {
 
   return {
     ...product,
+    category: product.categories.length > 0 ? product.categories[0].category : { id: '', name: '', slug: '' },
     categories: product.categories.map(pc => pc.category),
     hasUsageOption,
     usageOptions,
@@ -107,7 +108,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </Link>
         <span>/</span>
         {product.categories.length > 0 && (
-          <Link href={`/categories/${product.categories[0].slug}`} className="hover:text-gray-700">
+          <Link href={`/category/${product.categories[0].slug}`} className="hover:text-gray-700">
             {product.categories[0].name}
           </Link>
         )}

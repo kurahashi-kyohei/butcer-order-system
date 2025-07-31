@@ -1,17 +1,11 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "rhel-openssl-1.0.x"]
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Category {
@@ -29,21 +23,21 @@ model Product {
   id              String            @id @default(cuid())
   name            String
   description     String?
-  priceType       PriceType         // WEIGHT_BASED, PACK
-  basePrice       Int               // 重量単価商品は100g単位の価格、パック商品は固定価格
-  unit            String            // "100g" または "パック"
+  priceType       PriceType
+  basePrice       Int
+  unit            String
   imageUrl        String?
   isActive        Boolean           @default(true)
-  hasStock        Boolean           @default(true) // 在庫有無
-  // 商品オプション設定（ID参照方式）
-  usageOptionIds  String?           // カンマ区切りのオプションID "id1,id2,id3"
-  flavorOptionIds String?           // カンマ区切りのオプションID "id1,id2,id3"
-  quantityMethods String            @default("WEIGHT") // 数量・個数指定方法（カンマ区切り）
-  hasRemarks      Boolean           @default(false)  // 備考欄の有無
-  categories      ProductCategory[]
-  orderItems      OrderItem[]
+  hasStock        Boolean           @default(true)
+  usageOptionIds  String?
+  flavorOptionIds String?
+  quantityMethods String            @default("WEIGHT")
+  hasRemarks      Boolean           @default(false)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
+  priority        Int               @default(3)
+  orderItems      OrderItem[]
+  categories      ProductCategory[]
 }
 
 model Order {
@@ -56,27 +50,29 @@ model Order {
   pickupTime    String
   totalAmount   Int
   status        OrderStatus @default(PENDING)
-  orderItems    OrderItem[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+  orderItems    OrderItem[]
 }
 
 model OrderItem {
-  id                String  @id @default(cuid())
-  quantity          Int     // 重量商品はグラム数、パック商品は個数
-  price             Int     // 商品単価
-  subtotal          Int     // 小計
-  selectedMethod    String  // 選択された数量選択方法
-  // 選択されたオプション
-  usageOptionId     String? // 選択された用途オプションID
-  usageOptionName   String? // 選択された用途オプション名（表示用）
-  flavorOptionId    String? // 選択された味付けオプションID
-  flavorOptionName  String? // 選択された味付けオプション名（表示用）
-  remarks           String? // 備考
-  orderId           String
-  order             Order   @relation(fields: [orderId], references: [id])
-  productId         String
-  product           Product @relation(fields: [productId], references: [id])
+  id               String  @id @default(cuid())
+  quantity         Int
+  price            Int
+  subtotal         Int
+  selectedMethod   String
+  pieceGrams       Int?
+  pieceCount       Int?
+  packCount        Int?
+  usageOptionId    String?
+  usageOptionName  String?
+  flavorOptionId   String?
+  flavorOptionName String?
+  remarks          String?
+  orderId          String
+  productId        String
+  order            Order   @relation(fields: [orderId], references: [id])
+  product          Product @relation(fields: [productId], references: [id])
 }
 
 model UsageOption {
@@ -104,35 +100,35 @@ model User {
   role     Role   @default(ADMIN)
 }
 
-enum PriceType {
-  WEIGHT_BASED  // 重量単価
-  PACK          // パック売り
-}
-
-enum QuantityMethod {
-  WEIGHT        // 重量指定（g単位）
-  PIECE         // 枚数指定
-  PACK          // パック指定
-  PIECE_COUNT   // 本数指定
-}
-
-enum OrderStatus {
-  PENDING     // 注文受付
-  PREPARING   // 準備中
-  READY       // 準備完了
-  COMPLETED   // 受け取り完了
-  CANCELLED   // キャンセル
-}
-
 model ProductCategory {
   id         String   @id @default(cuid())
   productId  String
   categoryId String
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
-  
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
   @@unique([productId, categoryId])
+}
+
+enum PriceType {
+  WEIGHT_BASED
+  PACK
+}
+
+enum QuantityMethod {
+  WEIGHT
+  PIECE
+  PACK
+  PIECE_COUNT
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
 }
 
 enum Role {

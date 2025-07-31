@@ -1,8 +1,6 @@
 'use client'
 
-import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 
 interface CartItemData {
   id: string
@@ -16,16 +14,19 @@ interface CartItemData {
   remarks?: string
   quantityMethod: 'WEIGHT' | 'PIECE' | 'PACK' | 'PIECE_COUNT'
   priceType: 'WEIGHT_BASED' | 'PACK'
+  pieceDetails?: {
+    pieceGrams?: number
+    pieceCount?: number
+    packCount?: number
+  }
 }
 
 interface CartItemProps {
   item: CartItemData
-  onUpdateQuantity: (id: string, quantity: number) => void
   onRemoveItem: (id: string) => void
 }
 
-export function CartItem({ item, onUpdateQuantity, onRemoveItem }: CartItemProps) {
-  const [quantity, setQuantity] = useState(item.quantity)
+export function CartItem({ item, onRemoveItem }: CartItemProps) {
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('ja-JP', {
@@ -49,19 +50,6 @@ export function CartItem({ item, onUpdateQuantity, onRemoveItem }: CartItemProps
     }
   }
 
-  const calculateSubtotal = (qty: number) => {
-    if (item.priceType === 'WEIGHT_BASED') {
-      return Math.round((item.price * qty) / 100)
-    } else {
-      return item.price * qty
-    }
-  }
-
-  const handleQuantityChange = (newQuantity: number) => {
-    if (newQuantity < 1) return
-    setQuantity(newQuantity)
-    onUpdateQuantity(item.id, newQuantity)
-  }
 
   return (
     <div className="border border-gray-200 rounded-lg p-4 space-y-4">
@@ -95,50 +83,43 @@ export function CartItem({ item, onUpdateQuantity, onRemoveItem }: CartItemProps
       </div>
 
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <span className="text-sm text-gray-700">数量:</span>
-          
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleQuantityChange(quantity - 1)}
-              disabled={quantity <= 1}
-            >
-              -
-            </Button>
-            
-            <Input
-              type="number"
-              value={quantity}
-              onChange={(e) => {
-                const value = parseInt(e.target.value) || 0
-                handleQuantityChange(value)
-              }}
-              className="w-20 text-center"
-              min={1}
-            />
-            
-            <span className="text-sm text-gray-600">
-              {getQuantityUnit()}
+        <div className="text-sm text-gray-700">
+          <span className="font-medium">数量: </span>
+          {item.quantityMethod === 'PIECE' && item.pieceDetails ? (
+            <span>
+              {item.pieceDetails.pieceGrams}g × {item.pieceDetails.pieceCount}枚 × {item.pieceDetails.packCount}パック = {item.quantity}g
             </span>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleQuantityChange(quantity + 1)}
-            >
-              +
-            </Button>
-          </div>
+          ) : item.quantityMethod === 'WEIGHT' && item.pieceDetails?.packCount ? (
+            <span>
+              {item.pieceDetails.packCount > 1 ? (
+                `${Math.round(item.quantity / item.pieceDetails.packCount)}g × ${item.pieceDetails.packCount}パック = ${item.quantity}g`
+              ) : (
+                `${item.quantity}g`
+              )}
+            </span>
+          ) : item.quantityMethod === 'PIECE_COUNT' && item.pieceDetails?.packCount ? (
+            <span>
+              {item.pieceDetails.packCount > 1 ? (
+                `${Math.round(item.quantity / item.pieceDetails.packCount)}本 × ${item.pieceDetails.packCount}パック = ${item.quantity}本`
+              ) : (
+                `${item.quantity}本`
+              )}
+            </span>
+          ) : item.quantityMethod === 'PACK' ? (
+            <span>{item.quantity}パック</span>
+          ) : (
+            <span>{item.quantity}{getQuantityUnit()}</span>
+          )}
         </div>
 
         <div className="text-right">
           <div className="text-sm text-gray-600">
-            {formatPrice(item.price)} × {quantity}{getQuantityUnit()}
+            <span>
+              合計: {formatPrice(item.subtotal)}
+            </span>
           </div>
           <div className="text-lg font-bold text-red-600">
-            {formatPrice(calculateSubtotal(quantity))}
+            {formatPrice(item.subtotal)}
           </div>
         </div>
       </div>

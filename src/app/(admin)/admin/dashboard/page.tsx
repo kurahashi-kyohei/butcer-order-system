@@ -10,8 +10,14 @@ import { Button } from '@/components/ui/Button'
 export default async function AdminDashboard() {
   const session = await getServerSession(authOptions)
 
-  if (!session || session.user.role !== 'ADMIN') {
+  if (!session) {
     redirect('/admin/login')
+    return
+  }
+
+  if (session.user.role !== 'ADMIN') {
+    redirect('/admin/login')
+    return
   }
 
   // ダッシュボード用データを取得

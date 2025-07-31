@@ -26,7 +26,7 @@
 - **認証**: NextAuth.js
 - **バリデーション**: Zod
 - **フォーム**: React Hook Form
-- **デプロイ**: Netlify
+- **デプロイ**: Vercel
 
 ## 📦 セットアップ
 
@@ -54,28 +54,120 @@
    npm run dev
    ```
 
-### 本番デプロイ (Netlify + PostgreSQL)
+### 本番デプロイ (Vercel + Neon PostgreSQL)
 
-1. **Neon PostgreSQL設定**
-   - [Neon](https://neon.tech) でプロジェクト作成
-   - PostgreSQL接続URLを取得
+#### 1. Neon PostgreSQL データベース作成
 
-2. **Netlify デプロイ**
-   - GitHubリポジトリをNetlifyに接続
-   - **ビルドコマンド**: `npm run build:netlify`
-   - **パブリッシュディレクトリ**: `.next`
-   - 以下の環境変数を設定:
-     ```
-     DATABASE_URL="postgresql://username:password@hostname/database?sslmode=require"
-     NEXTAUTH_SECRET="your-super-secret-key-32-chars-min"
-     NEXTAUTH_URL="https://your-site.netlify.app"
-     NODE_ENV="production"
-     ```
+1. **Neonアカウント作成**
+   - [Neon](https://neon.tech) にアクセス
+   - GitHubアカウントでサインアップ
 
-3. **重要な注意点**
-   - 開発環境: SQLite (`prisma/schema.prisma`)
-   - 本番環境: PostgreSQL (`prisma/schema.production.prisma`)
-   - デプロイ時に自動でPostgreSQLスキーマに切り替わります
+2. **新しいプロジェクト作成**
+   - "Create a project" をクリック
+   - プロジェクト名: `butcher-order-system`
+   - PostgreSQLバージョン: 最新版を選択
+   - リージョン: `Asia Pacific (Tokyo)` を推奨
+
+3. **データベース接続情報取得**
+   - プロジェクト作成後、"Connection Details" から接続URLをコピー
+   - 形式: `postgresql://username:password@hostname/database?sslmode=require`
+
+#### 2. Vercel デプロイ設定
+
+1. **GitHubリポジトリ準備**
+   ```bash
+   # 変更をコミット・プッシュ
+   git add .
+   git commit -m "Vercelデプロイ用設定追加"
+   git push origin main
+   ```
+
+2. **Vercelプロジェクト作成**
+   - [Vercel](https://vercel.com) にアクセス
+   - GitHubアカウントでサインイン
+   - "New Project" → GitHubリポジトリを選択
+   - プロジェクト名確認後、"Deploy" をクリック
+
+3. **環境変数設定**
+   - Vercel ダッシュボード → プロジェクト → Settings → Environment Variables
+   - 以下の環境変数を追加:
+
+   ```env
+   DATABASE_URL
+   値: postgresql://username:password@hostname/database?sslmode=require
+   (Neonから取得した接続URL)
+
+   NEXTAUTH_SECRET
+   値: ランダムな32文字以上の文字列
+   生成方法: openssl rand -base64 32
+
+   NEXTAUTH_URL
+   値: https://your-project-name.vercel.app
+   (Vercelから自動発行されるURL)
+
+   NODE_ENV
+   値: production
+   ```
+
+4. **再デプロイ実行**
+   - Environment Variables設定後
+   - Deployments タブ → 最新デプロイの "..." → "Redeploy"
+
+#### 3. データベース初期化
+
+デプロイ完了後、データベースに初期データを投入：
+
+```bash
+# ローカルで実行（本番データベースに接続）
+DATABASE_URL="your-neon-connection-url" npm run db:migrate
+```
+
+または、Vercel CLIを使用：
+
+```bash
+# Vercel CLI インストール
+npm i -g vercel
+
+# プロジェクトにリンク
+vercel link
+
+# 本番環境でコマンド実行
+vercel env pull .env.production
+DATABASE_URL=$(cat .env.production | grep DATABASE_URL | cut -d '=' -f2) npm run db:migrate
+```
+
+#### 4. デプロイ確認
+
+1. **サイト動作確認**
+   - Vercel URLにアクセス
+   - 商品一覧が表示されることを確認
+
+2. **管理者ログイン確認**
+   - `/admin/login` にアクセス
+   - デフォルトアカウントでログイン可能か確認
+
+3. **注文機能確認**
+   - 商品をカートに追加
+   - 注文完了まで一通りテスト
+
+#### 5. トラブルシューティング
+
+**ビルドエラーが発生した場合:**
+```bash
+# ローカルでビルド確認
+npm run build:vercel
+```
+
+**データベース接続エラーの場合:**
+- Neon接続URLが正しいか確認
+- データベースが起動しているか確認
+- SSL接続設定が正しいか確認
+
+**環境変数の確認:**
+```bash
+# Vercel CLI で環境変数確認
+vercel env ls
+```
 
 ## 🔧 環境変数
 

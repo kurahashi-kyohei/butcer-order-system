@@ -64,7 +64,8 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/admin/login'
   },
-  secret: process.env.NEXTAUTH_SECRET
+  secret: process.env.NEXTAUTH_SECRET,
+  trustHost: true
 }
 
 declare module 'next-auth' {

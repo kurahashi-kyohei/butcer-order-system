@@ -3,21 +3,28 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { Select } from '@/components/ui/Select'
+import { CustomSelect } from '@/components/ui/CustomSelect'
 
 interface OrderItem {
   id: string
   quantity: number
   price: number
   subtotal: number
-  selectedUsage?: string
-  selectedFlavor?: string
-  remarks?: string
+  selectedMethod: string
+  pieceGrams?: number
+  pieceCount?: number
+  packCount?: number
+  usageOptionName?: string | null
+  flavorOptionName?: string | null
+  remarks?: string | null
+  selectedUsage?: string  // APIからの変換用
+  selectedFlavor?: string  // APIからの変換用
   product: {
     name: string
     unit: string
     priceType: string
-    quantityMethod: string
+    quantityMethods?: string
+    quantityMethod?: string  // APIからの変換用
   }
 }
 
@@ -93,18 +100,60 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
   }
 
   const getQuantityDisplay = (item: OrderItem) => {
-    const { quantityMethod } = item.product
-    switch (quantityMethod) {
+    const method = item.selectedMethod || 'WEIGHT'
+    
+    switch (method) {
       case 'WEIGHT':
-        return `${item.quantity}g`
+        // 重量選択: グラム数×パック数
+        if (item.packCount) {
+          if (item.packCount > 1) {
+            const gramsPerPack = Math.round(item.quantity / item.packCount)
+            return `${gramsPerPack.toLocaleString()}g × ${item.packCount}パック = ${item.quantity.toLocaleString()}g`
+          } else {
+            return `${item.quantity.toLocaleString()}g`
+          }
+        }
+        return `${item.quantity.toLocaleString()}g`
       case 'PIECE':
+        // 枚数選択: グラム数×枚数×パック数
+        if (item.pieceGrams && item.pieceCount && item.packCount) {
+          const totalPieces = item.pieceCount * item.packCount
+          return `${item.pieceGrams}g × ${totalPieces}枚 (${item.pieceCount}枚×${item.packCount}パック) = ${item.quantity.toLocaleString()}g`
+        }
         return `${item.quantity}枚`
       case 'PACK':
+        // パック選択: パック数
         return `${item.quantity}パック`
       case 'PIECE_COUNT':
+        // 本数選択: 本数×パック数
+        if (item.packCount) {
+          if (item.packCount > 1) {
+            const piecesPerPack = Math.round(item.quantity / item.packCount)
+            return `${piecesPerPack}本 × ${item.packCount}パック = ${item.quantity}本`
+          } else {
+            return `${item.quantity}本`
+          }
+        }
         return `${item.quantity}本`
       default:
-        return item.quantity.toString()
+        return `${item.quantity}${item.product.unit || ''}`
+    }
+  }
+
+  const getMethodLabel = (item: OrderItem) => {
+    const method = item.selectedMethod || 'WEIGHT'
+    
+    switch (method) {
+      case 'WEIGHT':
+        return '重量指定'
+      case 'PIECE':
+        return '枚数指定'
+      case 'PACK':
+        return 'パック指定'
+      case 'PIECE_COUNT':
+        return '本数指定'
+      default:
+        return method
     }
   }
 
@@ -216,7 +265,7 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 注文ステータス
               </label>
-              <Select
+              <CustomSelect
                 value={currentStatus}
                 onChange={(e) => setCurrentStatus(e.target.value)}
                 options={statusOptions}
@@ -264,22 +313,25 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                   <div>
                     <span className="font-medium text-gray-700">数量:</span>
-                    <span className="ml-2 text-gray-900">
+                    <span className="ml-2 text-gray-900 font-semibold">
                       {getQuantityDisplay(item)}
                     </span>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {getMethodLabel(item)}
+                    </div>
                   </div>
 
-                  {item.selectedUsage && (
+                  {(item.usageOptionName || item.selectedUsage) && (
                     <div>
                       <span className="font-medium text-gray-700">用途:</span>
-                      <span className="ml-2 text-gray-900">{item.selectedUsage}</span>
+                      <span className="ml-2 text-gray-900">{item.usageOptionName || item.selectedUsage}</span>
                     </div>
                   )}
 
-                  {item.selectedFlavor && (
+                  {(item.flavorOptionName || item.selectedFlavor) && (
                     <div>
                       <span className="font-medium text-gray-700">味付け:</span>
-                      <span className="ml-2 text-gray-900">{item.selectedFlavor}</span>
+                      <span className="ml-2 text-gray-900">{item.flavorOptionName || item.selectedFlavor}</span>
                     </div>
                   )}
                 </div>

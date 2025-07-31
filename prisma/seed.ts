@@ -8,10 +8,10 @@ async function main() {
   const hashedPassword = await bcrypt.hash('admin123', 10)
   
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@butcher-maruko.com' },
+    where: { email: 'buchermarukou@gmail.com' },
     update: {},
     create: {
-      email: 'admin@butcher-maruko.com',
+      email: 'buchermarukou@gmail.com',
       password: hashedPassword,
       role: 'ADMIN'
     }
@@ -73,7 +73,7 @@ async function main() {
     { name: '加工品', slug: 'processed-foods', sortOrder: 8 }
   ]
 
-  const createdCategories = {}
+  const createdCategories: Record<string, any> = {}
   for (const categoryData of categories) {
     const category = await prisma.category.upsert({
       where: { slug: categoryData.slug },
@@ -510,21 +510,6 @@ async function main() {
       hasRemarks: false,
       hasStock: true
     },
-    // しゃぶしゃぶカテゴリ
-    {
-      id: 'pork-bara-shabu',
-      name: '豚バラ',
-      description: '豚バラです。焼肉、しゃぶしゃぶ、その他の用途に最適です。',
-      priceType: 'WEIGHT_BASED' as const,
-      basePrice: 160,
-      unit: '100g',
-      categories: ['yakiniku', 'pork', 'shabu'],
-      usageOptionIds: `${yakinikuUsage?.id},${shabuUsage?.id},${otherUsage?.id}`,
-      flavorOptionIds: `${jishaSpecialFlavor?.id},${shioFlavor?.id},${horumonFlavor?.id},${shiokoshoFlavor?.id},${nashiFlavor?.id}`,
-      quantityMethods: 'WEIGHT',
-      hasRemarks: true,
-      hasStock: true
-    },
     // 牛肉カテゴリ
     {
       id: 'beef-shoulder-loin-domestic',
@@ -936,20 +921,6 @@ async function main() {
       hasRemarks: false,
       hasStock: true
     },
-    {
-      id: 'r-pork-wiener-processed',
-      name: 'Rポークウインナー',
-      description: 'Rポークウインナーです。1本約20g。',
-      priceType: 'WEIGHT_BASED' as const,
-      basePrice: 150,
-      unit: '本',
-      categories: ['yakiniku', 'processed-foods'],
-      usageOptionIds: '',
-      flavorOptionIds: '',
-      quantityMethods: 'PIECE_COUNT',
-      hasRemarks: false,
-      hasStock: true
-    }
   ]
 
   // 各商品を作成

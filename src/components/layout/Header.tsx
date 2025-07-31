@@ -54,7 +54,7 @@ export function Header() {
             {categories.map((category) => (
               <Link
                 key={category.id}
-                href={`/categories/${category.slug}`}
+                href={`/category/${category.slug}`}
                 className="text-gray-300 hover:text-red-400 px-2 py-2 rounded-md text-sm font-medium whitespace-nowrap"
               >
                 {category.name}
@@ -106,7 +106,7 @@ export function Header() {
               {categories.map((category) => (
                 <Link
                   key={category.id}
-                  href={`/categories/${category.slug}`}
+                  href={`/category/${category.slug}`}
                   className="text-gray-300 hover:text-red-400 block px-3 py-2 rounded-md text-base font-medium"
                   onClick={() => setIsMenuOpen(false)}
                 >

@@ -12,7 +12,7 @@ interface Product {
   unit: string
   imageUrl?: string | null
   isActive: boolean
-  stock?: number | null
+  hasStock?: boolean
   category: {
     id: string
     name: string
@@ -97,13 +97,9 @@ export function ProductGrid({ products, currentPage, totalPages, totalCount }: P
                 )}
               </div>
 
-              {product.priceType === 'PACK' && product.stock !== null && product.stock <= 5 && (
+              {product.hasStock === false && (
                 <div className="mb-4">
-                  {product.stock === 0 ? (
-                    <span className="text-red-600 text-sm">在庫切れ</span>
-                  ) : (
-                    <span className="text-orange-600 text-sm">残り{product.stock}点</span>
-                  )}
+                  <span className="text-red-600 text-sm">在庫切れ</span>
                 </div>
               )}
 
@@ -111,9 +107,9 @@ export function ProductGrid({ products, currentPage, totalPages, totalCount }: P
                 <Button 
                   className="w-full text-xs md:text-sm"
                   size="sm"
-                  disabled={product.priceType === 'PACK' && product.stock === 0}
+                  disabled={product.hasStock === false}
                 >
-                  {product.priceType === 'PACK' && product.stock === 0 ? '在庫切れ' : '詳細'}
+                  {product.hasStock === false ? '在庫切れ' : '詳細'}
                 </Button>
               </Link>
             </CardContent>

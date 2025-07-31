@@ -20,23 +20,26 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
+      // redirect: falseで手動制御
       const result = await signIn('credentials', {
         email,
         password,
-        redirect: false,
+        redirect: false
       })
-
+      
       if (result?.error) {
         setError('メールアドレスまたはパスワードが正しくありません')
+        setIsLoading(false)
+      } else if (result?.ok) {
+        // 成功時は強制的にページ全体をリロードしてダッシュボードへ
+        window.location.href = '/admin/dashboard'
       } else {
-        const session = await getSession()
-        if (session) {
-          router.push('/admin/dashboard')
-        }
+        setError('ログインに問題が発生しました')
+        setIsLoading(false)
       }
+      
     } catch (error) {
       setError('ログインに失敗しました。もう一度お試しください。')
-    } finally {
       setIsLoading(false)
     }
   }
@@ -75,7 +78,7 @@ export default function LoginPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@butcher-maruko.com"
+                    placeholder="メールアドレスを入力"
                   />
                 </div>
               </div>
@@ -115,13 +118,6 @@ export default function LoginPage() {
             </form>
           </CardContent>
         </Card>
-        
-        <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
-            デフォルト管理者アカウント:<br />
-            admin@butcher-maruko.com / admin123
-          </p>
-        </div>
       </div>
     </div>
   )

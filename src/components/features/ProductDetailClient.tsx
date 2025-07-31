@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Textarea } from '@/components/ui/Textarea'
 import { ProductOptions } from '@/components/features/ProductOptions'
 import { QuantitySelector } from '@/components/features/QuantitySelector'
 
@@ -44,6 +45,12 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
     selectedFlavor?: string
     remarks?: string
   }>({})
+  const [pieceDetails, setPieceDetails] = useState<{
+    pieceGrams?: number
+    pieceCount?: number
+    packCount?: number
+  }>({})
+  const [remarks, setRemarks] = useState('')
   const [isAddingToCart, setIsAddingToCart] = useState(false)
 
   const handleAddToCart = async () => {
@@ -70,7 +77,8 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
         selectedMethod,
         selectedUsage: selectedOptions.selectedUsage,
         selectedFlavor: selectedOptions.selectedFlavor,
-        remarks: selectedOptions.remarks,
+        remarks: remarks,
+        pieceDetails: pieceDetails,
       }
 
       // セッションストレージにカート情報を保存
@@ -79,7 +87,8 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
         item.productId === cartItem.productId &&
         item.selectedMethod === cartItem.selectedMethod &&
         item.selectedUsage === cartItem.selectedUsage &&
-        item.selectedFlavor === cartItem.selectedFlavor
+        item.selectedFlavor === cartItem.selectedFlavor &&
+        item.remarks === cartItem.remarks
       )
 
       if (existingItemIndex >= 0) {
@@ -120,7 +129,6 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             usageOptions={product.usageOptions}
             hasFlavorOption={product.hasFlavorOption}
             flavorOptions={product.flavorOptions}
-            hasRemarks={product.hasRemarks}
             onOptionsChange={setSelectedOptions}
           />
 
@@ -130,12 +138,29 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             basePrice={product.basePrice}
             unit={product.unit}
             hasStock={product.hasStock}
-            onQuantityChange={(qty, sub, method) => {
+            onQuantityChange={(qty, sub, method, details) => {
               setQuantity(qty)
               setSubtotal(sub)
               setSelectedMethod(method)
+              if (details) {
+                setPieceDetails(details)
+              }
             }}
           />
+
+          {product.hasRemarks && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                備考（任意）
+              </label>
+              <Textarea
+                placeholder="特別な要望があればご記入ください"
+                value={remarks}
+                onChange={(e) => setRemarks(e.target.value)}
+                rows={3}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -151,9 +176,18 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             </div>
             <div className="flex justify-between">
               <span>数量:</span>
-              <span>{quantity}{selectedMethod === 'WEIGHT' ? 'g' : 
-                selectedMethod === 'PIECE' ? '枚' :
-                selectedMethod === 'PACK' ? 'パック' : '本'}</span>
+              <span>
+                {selectedMethod === 'PIECE' && pieceDetails.pieceGrams && pieceDetails.pieceCount && pieceDetails.packCount ? 
+                  `${pieceDetails.pieceGrams}g × ${pieceDetails.pieceCount}枚 × ${pieceDetails.packCount}パック = ${quantity}g` :
+                selectedMethod === 'WEIGHT' && pieceDetails.packCount && pieceDetails.packCount > 1 ?
+                  `${Math.round(quantity / pieceDetails.packCount)}g × ${pieceDetails.packCount}パック = ${quantity}g` :
+                selectedMethod === 'PIECE_COUNT' && pieceDetails.packCount && pieceDetails.packCount > 1 ?
+                  `${Math.round(quantity / pieceDetails.packCount)}本 × ${pieceDetails.packCount}パック = ${quantity}本` :
+                  `${quantity}${selectedMethod === 'WEIGHT' ? 'g' : 
+                    selectedMethod === 'PACK' ? 'パック' : 
+                    selectedMethod === 'PIECE_COUNT' ? '本' : '個'}`
+                }
+              </span>
             </div>
             {selectedOptions.selectedUsage && (
               <div className="flex justify-between">
