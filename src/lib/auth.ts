@@ -12,7 +12,10 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
+        console.log('Authorize called with:', { email: credentials?.email })
+        
         if (!credentials?.email || !credentials?.password) {
+          console.log('Missing credentials')
           return null
         }
 
@@ -21,16 +24,22 @@ export const authOptions: NextAuthOptions = {
             where: { email: credentials.email }
           })
 
+          console.log('User found:', !!user)
+
           if (!user) {
+            console.log('User not found')
             return null
           }
 
           const isValidPassword = await bcrypt.compare(credentials.password, user.password)
+          console.log('Password valid:', isValidPassword)
           
           if (!isValidPassword) {
+            console.log('Invalid password')
             return null
           }
 
+          console.log('Authentication successful for:', user.email)
           return {
             id: user.id,
             email: user.email,
@@ -48,15 +57,19 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
+      console.log('JWT callback - token:', !!token, 'user:', !!user)
       if (user) {
+        console.log('Adding role to token:', user.role)
         token.role = user.role
       }
       return token
     },
     async session({ session, token }) {
+      console.log('Session callback - session:', !!session, 'token:', !!token)
       if (token) {
         session.user.id = token.sub!
         session.user.role = token.role as string
+        console.log('Session user role:', session.user.role)
       }
       return session
     }
@@ -64,7 +77,9 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/admin/login'
   },
-  secret: process.env.NEXTAUTH_SECRET
+  secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === 'development',
+  trustHost: true
 }
 
 declare module 'next-auth' {
