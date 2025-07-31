@@ -20,19 +20,23 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      // NextAuthの標準的な方法でリダイレクトを含むサインイン
+      // redirect: falseで手動制御
       const result = await signIn('credentials', {
         email,
         password,
-        callbackUrl: '/admin/dashboard'
+        redirect: false
       })
       
-      // NextAuthが自動的にリダイレクトするので、エラーの場合のみ処理
-      if (result && result.error) {
+      if (result?.error) {
         setError('メールアドレスまたはパスワードが正しくありません')
         setIsLoading(false)
+      } else if (result?.ok) {
+        // 成功時は強制的にページ全体をリロードしてダッシュボードへ
+        window.location.href = '/admin/dashboard'
+      } else {
+        setError('ログインに問題が発生しました')
+        setIsLoading(false)
       }
-      // 成功の場合はNextAuthが自動的にリダイレクトするので何もしない
       
     } catch (error) {
       setError('ログインに失敗しました。もう一度お試しください。')

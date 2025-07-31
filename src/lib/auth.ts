@@ -59,20 +59,6 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as string
       }
       return session
-    },
-    async redirect({ url, baseUrl }) {
-      // 相対URLの場合はbaseUrlと結合
-      if (url.startsWith('/')) {
-        return `${baseUrl}${url}`
-      }
-      
-      // 同じbaseUrlの場合はそのまま
-      if (url.startsWith(baseUrl)) {
-        return url
-      }
-      
-      // デフォルトはダッシュボード
-      return `${baseUrl}/admin/dashboard`
     }
   },
   pages: {
