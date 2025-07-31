@@ -20,21 +20,34 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
+      console.log('Login attempt:', { email })
       const result = await signIn('credentials', {
         email,
         password,
         redirect: false,
       })
 
+      console.log('SignIn result:', result)
+
       if (result?.error) {
+        console.log('SignIn error:', result.error)
         setError('メールアドレスまたはパスワードが正しくありません')
       } else {
+        console.log('SignIn successful, checking session...')
         const session = await getSession()
+        console.log('Session:', session)
+        
         if (session) {
-          router.push('/admin/dashboard')
+          console.log('Session found, redirecting to dashboard')
+          // より確実な遷移のために、window.locationを使用
+          window.location.href = '/admin/dashboard'
+        } else {
+          console.log('No session found after login')
+          setError('セッションの作成に失敗しました')
         }
       }
     } catch (error) {
+      console.error('Login error:', error)
       setError('ログインに失敗しました。もう一度お試しください。')
     } finally {
       setIsLoading(false)
