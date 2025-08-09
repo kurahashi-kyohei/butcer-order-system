@@ -40,6 +40,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
   const [quantity, setQuantity] = useState(1)
   const [subtotal, setSubtotal] = useState(0)
   const [selectedMethod, setSelectedMethod] = useState('')
+  const [isPriceUndetermined, setIsPriceUndetermined] = useState(false)
   const [selectedOptions, setSelectedOptions] = useState<{
     selectedUsage?: string
     selectedFlavor?: string
@@ -73,22 +74,31 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
         productId: product.id,
         quantity,
         price: product.basePrice,
-        subtotal,
+        subtotal: isPriceUndetermined ? 0 : subtotal,
         selectedMethod,
         selectedUsage: selectedOptions.selectedUsage,
         selectedFlavor: selectedOptions.selectedFlavor,
         remarks: remarks,
         pieceDetails: pieceDetails,
+        isPriceUndetermined,
       }
 
       // セッションストレージにカート情報を保存
       const existingCart = JSON.parse(sessionStorage.getItem('cart') || '[]')
-      const existingItemIndex = existingCart.findIndex((item: any) => 
+      const existingItemIndex = existingCart.findIndex((item: {
+        productId: string;
+        selectedMethod: string;
+        selectedUsage?: string;
+        selectedFlavor?: string;
+        remarks?: string;
+        isPriceUndetermined?: boolean;
+      }) => 
         item.productId === cartItem.productId &&
         item.selectedMethod === cartItem.selectedMethod &&
         item.selectedUsage === cartItem.selectedUsage &&
         item.selectedFlavor === cartItem.selectedFlavor &&
-        item.remarks === cartItem.remarks
+        item.remarks === cartItem.remarks &&
+        item.isPriceUndetermined === cartItem.isPriceUndetermined
       )
 
       if (existingItemIndex >= 0) {
@@ -133,15 +143,15 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
           />
 
           <QuantitySelector
-            priceType={product.priceType}
             quantityMethods={product.quantityMethods}
             basePrice={product.basePrice}
             unit={product.unit}
             hasStock={product.hasStock}
-            onQuantityChange={(qty, sub, method, details) => {
+            onQuantityChange={(qty, sub, method, details, priceUndetermined) => {
               setQuantity(qty)
               setSubtotal(sub)
               setSelectedMethod(method)
+              setIsPriceUndetermined(priceUndetermined || false)
               if (details) {
                 setPieceDetails(details)
               }
@@ -207,7 +217,9 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
           <div className="flex justify-between items-center text-lg font-bold">
             <span>合計:</span>
-            <span className="text-red-600">{formatPrice(subtotal)}</span>
+            <span className="text-red-600">
+              {isPriceUndetermined ? '価格未定' : formatPrice(subtotal)}
+            </span>
           </div>
 
           <Button

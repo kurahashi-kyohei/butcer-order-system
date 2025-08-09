@@ -5,12 +5,18 @@ interface OrderSummaryProps {
     price: number
     priceType: 'WEIGHT_BASED' | 'PACK'
     subtotal?: number
+    isPriceUndetermined?: boolean
   }>
   className?: string
 }
 
 export function OrderSummary({ items, className }: OrderSummaryProps) {
-  const calculateItemTotal = (item: { quantity: number; price: number; priceType: 'WEIGHT_BASED' | 'PACK'; subtotal?: number }) => {
+  const calculateItemTotal = (item: { quantity: number; price: number; priceType: 'WEIGHT_BASED' | 'PACK'; subtotal?: number; isPriceUndetermined?: boolean }) => {
+    // 価格未定の場合は0を返す
+    if (item.isPriceUndetermined) {
+      return 0
+    }
+    
     // subtotalが提供されている場合はそれを使用、そうでなければ従来の計算
     if (item.subtotal !== undefined) {
       return item.subtotal
@@ -23,6 +29,7 @@ export function OrderSummary({ items, className }: OrderSummaryProps) {
     }
   }
 
+  const hasUndeterminedPrice = items.some(item => item.isPriceUndetermined)
   const totalAmount = items.reduce((sum, item) => sum + calculateItemTotal(item), 0)
 
   const formatPrice = (price: number) => {
@@ -44,14 +51,16 @@ export function OrderSummary({ items, className }: OrderSummaryProps) {
         
         <div className="flex justify-between">
           <span>小計:</span>
-          <span>{formatPrice(totalAmount)}</span>
+          <span>{hasUndeterminedPrice ? '価格未定商品を含む' : formatPrice(totalAmount)}</span>
         </div>
         
         <hr className="my-3" />
         
         <div className="flex justify-between items-center text-lg font-bold">
           <span>合計:</span>
-          <span className="text-red-600">{formatPrice(totalAmount)}</span>
+          <span className="text-red-600">
+            {hasUndeterminedPrice ? '価格未定商品を含む' : formatPrice(totalAmount)}
+          </span>
         </div>
       </div>
       
