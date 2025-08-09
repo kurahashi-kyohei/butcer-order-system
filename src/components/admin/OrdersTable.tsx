@@ -14,8 +14,10 @@ interface OrderItem {
   selectedUsage?: string
   selectedFlavor?: string
   remarks?: string
+  selectedMethod?: string
   product: {
     name: string
+    unit?: string
   }
 }
 
@@ -94,6 +96,23 @@ export function OrdersTable({ orders, currentPage, totalPages, totalCount, curre
       style: 'currency',
       currency: 'JPY',
     }).format(price)
+  }
+
+  const isPriceUndetermined = (order: Order) => {
+    // 価格未定の判定: 
+    // 1. totalAmountが0の場合
+    // 2. または orderItemsに価格未定商品が含まれる場合
+    if (order.totalAmount === 0) {
+      return true
+    }
+    
+    // orderItemsで価格未定判定（PIECE選択、またはPIECE_COUNT + 100g単位）
+    return order.orderItems.some(item => {
+      if (item.subtotal === 0) return true
+      if (item.selectedMethod === 'PIECE') return true
+      if (item.selectedMethod === 'PIECE_COUNT' && item.product.unit !== '本') return true
+      return false
+    })
   }
 
   const formatDateTime = (date: Date) => {
@@ -258,7 +277,7 @@ export function OrdersTable({ orders, currentPage, totalPages, totalCount, curre
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
                       <p className="text-sm font-bold text-red-600">
-                        {formatPrice(order.totalAmount)}
+                        {isPriceUndetermined(order) ? '価格未定' : formatPrice(order.totalAmount)}
                       </p>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">

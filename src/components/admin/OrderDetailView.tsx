@@ -58,6 +58,30 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
     }).format(price)
   }
 
+  const isPriceUndetermined = (order: Order) => {
+    // 価格未定の判定: 
+    // 1. totalAmountが0の場合
+    // 2. または orderItemsに価格未定商品が含まれる場合
+    if (order.totalAmount === 0) {
+      return true
+    }
+    
+    // orderItemsで価格未定判定（PIECE選択、またはPIECE_COUNT + 100g単位）
+    return order.orderItems.some(item => {
+      if (item.subtotal === 0) return true
+      if (item.selectedMethod === 'PIECE') return true
+      if (item.selectedMethod === 'PIECE_COUNT' && item.product.unit !== '本') return true
+      return false
+    })
+  }
+
+  const isItemPriceUndetermined = (item: OrderItem) => {
+    if (item.subtotal === 0) return true
+    if (item.selectedMethod === 'PIECE') return true
+    if (item.selectedMethod === 'PIECE_COUNT' && item.product.unit !== '本') return true
+    return false
+  }
+
   const formatDateTime = (date: Date) => {
     return new Intl.DateTimeFormat('ja-JP', {
       year: 'numeric',
@@ -246,7 +270,7 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
               <div>
                 <h4 className="font-medium text-gray-900 mb-1">合計金額</h4>
                 <p className="text-2xl font-bold text-red-600">
-                  {formatPrice(order.totalAmount)}
+                  {isPriceUndetermined(order) ? '価格未定' : formatPrice(order.totalAmount)}
                 </p>
               </div>
             </div>
@@ -302,10 +326,10 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
                   </div>
                   <div className="text-right">
                     <p className="text-lg font-bold text-red-600">
-                      {formatPrice(item.subtotal)}
+                      {isItemPriceUndetermined(item) ? '価格未定' : formatPrice(item.subtotal)}
                     </p>
                     <p className="text-sm text-gray-500">
-                      単価: {formatPrice(item.price)} / {item.product.unit}
+                      単価: {isItemPriceUndetermined(item) ? '価格未定' : formatPrice(item.price)} / {item.product.unit}
                     </p>
                   </div>
                 </div>
@@ -352,7 +376,7 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
               </div>
               <div className="flex justify-between items-center text-xl font-bold mt-2">
                 <span className="text-gray-900">合計金額:</span>
-                <span className="text-red-600">{formatPrice(order.totalAmount)}</span>
+                <span className="text-red-600">{isPriceUndetermined(order) ? '価格未定' : formatPrice(order.totalAmount)}</span>
               </div>
             </div>
           </div>
