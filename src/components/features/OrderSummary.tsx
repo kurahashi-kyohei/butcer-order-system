@@ -51,7 +51,7 @@ export function OrderSummary({ items, className }: OrderSummaryProps) {
         
         <div className="flex justify-between">
           <span>小計:</span>
-          <span>{hasUndeterminedPrice ? '価格未定商品を含む' : formatPrice(totalAmount)}</span>
+          <span>{hasUndeterminedPrice ? '価格未定' : formatPrice(totalAmount)}</span>
         </div>
         
         <hr className="my-3" />
@@ -59,7 +59,7 @@ export function OrderSummary({ items, className }: OrderSummaryProps) {
         <div className="flex justify-between items-center text-lg font-bold">
           <span>合計:</span>
           <span className="text-red-600">
-            {hasUndeterminedPrice ? '価格未定商品を含む' : formatPrice(totalAmount)}
+            {hasUndeterminedPrice ? '価格未定' : formatPrice(totalAmount)}
           </span>
         </div>
       </div>

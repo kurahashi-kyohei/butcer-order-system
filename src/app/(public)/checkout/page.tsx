@@ -159,6 +159,7 @@ export default function CheckoutPage() {
           selectedUsage: item.selectedUsage || undefined,
           selectedFlavor: item.selectedFlavor || undefined,
           remarks: item.remarks || undefined,
+          isPriceUndetermined: item.isPriceUndetermined,
         }))
       }
 
