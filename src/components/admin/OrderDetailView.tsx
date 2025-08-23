@@ -219,6 +219,30 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
     }
   }
 
+  const handlePdfDownload = async () => {
+    try {
+      const response = await fetch(`/api/admin/orders/${order.id}/pdf`)
+      
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.style.display = 'none'
+        a.href = url
+        a.download = `order-${order.orderNumber}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+      } else {
+        alert('PDFの生成に失敗しました')
+      }
+    } catch (error) {
+      console.error('PDF download error:', error)
+      alert('PDFの生成に失敗しました')
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* 注文基本情報 */}
@@ -278,33 +302,55 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
         </CardContent>
       </Card>
 
-      {/* ステータス更新 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>ステータス管理</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-end space-x-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                注文ステータス
-              </label>
-              <CustomSelect
-                value={currentStatus}
-                onChange={(e) => setCurrentStatus(e.target.value)}
-                options={statusOptions}
-              />
+      {/* ステータス更新とエクスポート */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>ステータス管理</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end space-x-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  注文ステータス
+                </label>
+                <CustomSelect
+                  value={currentStatus}
+                  onChange={(e) => setCurrentStatus(e.target.value)}
+                  options={statusOptions}
+                />
+              </div>
+              <Button
+                onClick={handleStatusUpdate}
+                disabled={currentStatus === order.status || isUpdating}
+                isLoading={isUpdating}
+              >
+                ステータス更新
+              </Button>
             </div>
-            <Button
-              onClick={handleStatusUpdate}
-              disabled={currentStatus === order.status || isUpdating}
-              isLoading={isUpdating}
-            >
-              ステータス更新
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>エクスポート</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                注文書をPDF形式でダウンロードできます
+              </p>
+              <Button
+                onClick={handlePdfDownload}
+                variant="outline"
+                className="w-full"
+              >
+                📄 PDF ダウンロード
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* 注文内容詳細 */}
       <Card>
