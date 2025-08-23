@@ -47,7 +47,11 @@ export default async function AdminDashboard() {
         orderItems: {
           include: {
             product: {
-              select: { name: true }
+              select: { 
+                name: true,
+                unit: true,
+                quantityMethods: true
+              }
             }
           }
         }
@@ -60,6 +64,23 @@ export default async function AdminDashboard() {
       style: 'currency',
       currency: 'JPY',
     }).format(price)
+  }
+
+  const isPriceUndetermined = (order: any) => {
+    // 価格未定の判定: 
+    // 1. totalAmountが0の場合
+    // 2. または orderItemsに価格未定商品が含まれる場合
+    if (order.totalAmount === 0) {
+      return true
+    }
+    
+    // orderItemsで価格未定判定（PIECE選択、またはPIECE_COUNT + 100g単位）
+    return order.orderItems.some((item: any) => {
+      if (item.subtotal === 0) return true
+      if (item.selectedMethod === 'PIECE') return true
+      if (item.selectedMethod === 'PIECE_COUNT' && item.product.unit !== '本') return true
+      return false
+    })
   }
 
   const formatDateTime = (date: Date) => {
@@ -160,7 +181,7 @@ export default async function AdminDashboard() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium text-red-600">
-                        {formatPrice(order.totalAmount)}
+                        {isPriceUndetermined(order) ? '価格未定' : formatPrice(order.totalAmount)}
                       </p>
                       <p className={`text-xs px-2 py-1 rounded-full ${
                         order.status === 'PENDING' ? 'bg-orange-100 text-orange-800' :

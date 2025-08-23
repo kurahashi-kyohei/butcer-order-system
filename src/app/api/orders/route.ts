@@ -6,8 +6,8 @@ import { sendOrderCompletionEmail, type OrderEmailData } from '@/lib/email'
 const orderItemSchema = z.object({
   productId: z.string(),
   quantity: z.number().positive(),
-  price: z.number().positive(),
-  subtotal: z.number().positive(),
+  price: z.number().nonnegative(),
+  subtotal: z.number().nonnegative(),
   selectedMethod: z.string(),
   pieceGrams: z.number().optional(),
   pieceCount: z.number().optional(),
@@ -15,6 +15,7 @@ const orderItemSchema = z.object({
   selectedUsage: z.string().optional(),
   selectedFlavor: z.string().optional(),
   remarks: z.string().optional(),
+  isPriceUndetermined: z.boolean().optional(),
 })
 
 const createOrderSchema = z.object({
@@ -24,7 +25,7 @@ const createOrderSchema = z.object({
   customerPhone: z.string().min(1),
   pickupDate: z.string(),
   pickupTime: z.string(),
-  totalAmount: z.number().positive(),
+  totalAmount: z.number().nonnegative(),
   items: z.array(orderItemSchema).min(1),
 })
 

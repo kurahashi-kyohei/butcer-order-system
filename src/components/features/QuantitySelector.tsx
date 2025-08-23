@@ -6,16 +6,14 @@ import { Button } from '@/components/ui/Button'
 import { CustomSelect } from '@/components/ui/CustomSelect'
 
 interface QuantitySelectorProps {
-  priceType: 'WEIGHT_BASED' | 'PACK'
   quantityMethods: ('WEIGHT' | 'PIECE' | 'PACK' | 'PIECE_COUNT')[]
   basePrice: number
   unit: string
   hasStock: boolean
-  onQuantityChange: (quantity: number, subtotal: number, selectedMethod: string, details?: { pieceGrams?: number, pieceCount?: number, packCount?: number }) => void
+  onQuantityChange: (quantity: number, subtotal: number, selectedMethod: string, details?: { pieceGrams?: number, pieceCount?: number, packCount?: number }, isPriceUndetermined?: boolean) => void
 }
 
 export function QuantitySelector({
-  priceType,
   quantityMethods,
   basePrice,
   unit,
@@ -76,18 +74,38 @@ export function QuantitySelector({
     }
   }
 
+  const isPriceUndetermined = (method?: string) => {
+    const targetMethod = method || selectedMethod
+    if (targetMethod === 'PIECE') {
+      // 枚数選択の場合は常に価格未定
+      return true
+    }
+    if (targetMethod === 'PIECE_COUNT') {
+      // 本数選択の場合、単位が「本」でなければ価格未定
+      // （単位が「100g」などの場合は100g単価しかわからないため）
+      return unit !== '本'
+    }
+    return false
+  }
+
   const calculateSubtotal = (qty: number, method?: string) => {
     const targetMethod = method || selectedMethod
+    
+    // 価格未定の場合は0を返す
+    if (isPriceUndetermined(targetMethod)) {
+      return 0
+    }
+    
     switch (targetMethod) {
       case 'WEIGHT':
         // 重量選択時: (g × パック数 × basePrice) / 100
         return Math.round((basePrice * qty * packCount) / 100)
       case 'PIECE':
-        // 枚数の場合: (g × 枚数 × パック数 × basePrice) / 100
-        return Math.round((basePrice * pieceGrams * pieceCount * packCount) / 100)
+        // 枚数の場合: 価格未定のため0
+        return 0
       case 'PIECE_COUNT':
-        // 本数選択時: 本数 × パック数 × basePrice
-        return basePrice * qty * packCount
+        // 本数選択時: 本数 × パック数 × basePrice（単位が「本」の場合のみ）
+        return unit === '本' ? basePrice * qty * packCount : 0
       case 'PACK':
         // パック数の場合: パック数 × basePrice
         return basePrice * qty
@@ -101,12 +119,14 @@ export function QuantitySelector({
     if (selectedMethod === 'PIECE') {
       const totalQuantity = pieceGrams * pieceCount * packCount
       const subtotal = calculateSubtotal(totalQuantity, selectedMethod)
-      onQuantityChange(totalQuantity, subtotal, selectedMethod, { pieceGrams, pieceCount, packCount })
+      const priceUndetermined = isPriceUndetermined(selectedMethod)
+      onQuantityChange(totalQuantity, subtotal, selectedMethod, { pieceGrams, pieceCount, packCount }, priceUndetermined)
     } else if (selectedMethod === 'WEIGHT' || selectedMethod === 'PIECE_COUNT') {
       // 重量選択や本数選択時もパック数の変更を反映
       const totalQuantity = quantity * packCount
       const subtotal = calculateSubtotal(quantity, selectedMethod)
-      onQuantityChange(totalQuantity, subtotal, selectedMethod, { packCount })
+      const priceUndetermined = isPriceUndetermined(selectedMethod)
+      onQuantityChange(totalQuantity, subtotal, selectedMethod, { packCount }, priceUndetermined)
     }
   }, [pieceGrams, pieceCount, packCount, selectedMethod, quantity])
 
@@ -120,7 +140,8 @@ export function QuantitySelector({
     const initialSubtotal = calculateSubtotal(baseQuantity)
     const details = selectedMethod === 'PIECE' ? { pieceGrams, pieceCount, packCount } : 
                    selectedMethod === 'WEIGHT' || selectedMethod === 'PIECE_COUNT' ? { packCount } : undefined
-    onQuantityChange(initialQuantity, initialSubtotal, selectedMethod, details)
+    const priceUndetermined = isPriceUndetermined(selectedMethod)
+    onQuantityChange(initialQuantity, initialSubtotal, selectedMethod, details, priceUndetermined)
   }, []) // 初回マウント時のみ実行
 
   // 数量選択方法が変更されたときの処理
@@ -131,13 +152,15 @@ export function QuantitySelector({
       // PIECE選択時は初期値を設定し、useEffectで処理
       const totalQuantity = pieceGrams * pieceCount * packCount
       const subtotal = calculateSubtotal(totalQuantity, newMethod)
-      onQuantityChange(totalQuantity, subtotal, newMethod, { pieceGrams, pieceCount, packCount })
+      const priceUndetermined = isPriceUndetermined(newMethod)
+      onQuantityChange(totalQuantity, subtotal, newMethod, { pieceGrams, pieceCount, packCount }, priceUndetermined)
     } else {
       const newQuantity = newMethod === 'WEIGHT' ? 100 : 1
       setQuantity(newQuantity)
       const subtotal = calculateSubtotal(newQuantity, newMethod)
       const details = newMethod === 'WEIGHT' || newMethod === 'PIECE_COUNT' ? { packCount } : undefined
-      onQuantityChange(newQuantity, subtotal, newMethod, details)
+      const priceUndetermined = isPriceUndetermined(newMethod)
+      onQuantityChange(newQuantity, subtotal, newMethod, details, priceUndetermined)
     }
   }
 
@@ -151,7 +174,8 @@ export function QuantitySelector({
     const subtotal = calculateSubtotal(newQuantity)
     const totalQuantity = selectedMethod === 'WEIGHT' || selectedMethod === 'PIECE_COUNT' ? newQuantity * packCount : newQuantity
     const details = selectedMethod === 'WEIGHT' || selectedMethod === 'PIECE_COUNT' ? { packCount } : undefined
-    onQuantityChange(totalQuantity, subtotal, selectedMethod, details)
+    const priceUndetermined = isPriceUndetermined(selectedMethod)
+    onQuantityChange(totalQuantity, subtotal, selectedMethod, details, priceUndetermined)
   }
 
   const getPresetOptions = () => {
