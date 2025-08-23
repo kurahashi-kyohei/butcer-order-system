@@ -49,6 +49,8 @@ interface OrdersTableProps {
 export function OrdersTable({ orders, currentPage, totalPages, totalCount, currentSort }: OrdersTableProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([])
+  const [isExporting, setIsExporting] = useState(false)
 
   const handleSort = (field: string) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -144,6 +146,64 @@ export function OrdersTable({ orders, currentPage, totalPages, totalCount, curre
     }
   }
 
+  const handleSelectOrder = (orderId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedOrderIds(prev => [...prev, orderId])
+    } else {
+      setSelectedOrderIds(prev => prev.filter(id => id !== orderId))
+    }
+  }
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedOrderIds(orders.map(order => order.id))
+    } else {
+      setSelectedOrderIds([])
+    }
+  }
+
+  const handleBulkExport = async () => {
+    if (selectedOrderIds.length === 0) {
+      alert('エクスポートする注文を選択してください')
+      return
+    }
+
+    setIsExporting(true)
+    
+    try {
+      const response = await fetch('/api/admin/orders/export/bulk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ orderIds: selectedOrderIds }),
+      })
+      
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.style.display = 'none'
+        a.href = url
+        a.download = `orders-${new Date().toISOString().split('T')[0]}.zip`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+        
+        // 選択をクリア
+        setSelectedOrderIds([])
+      } else {
+        alert('エクスポートに失敗しました')
+      }
+    } catch (error) {
+      console.error('Export error:', error)
+      alert('エクスポートに失敗しました')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PENDING': return 'bg-orange-100 text-orange-800'
@@ -178,6 +238,23 @@ export function OrdersTable({ orders, currentPage, totalPages, totalCount, curre
         <p className="text-sm text-gray-600">
           {totalCount}件中 {Math.min((currentPage - 1) * 20 + 1, totalCount)}-{Math.min(currentPage * 20, totalCount)}件を表示
         </p>
+        
+        {selectedOrderIds.length > 0 && (
+          <div className="flex items-center space-x-4">
+            <span className="text-sm text-gray-600">
+              {selectedOrderIds.length}件選択中
+            </span>
+            <Button
+              onClick={handleBulkExport}
+              disabled={isExporting}
+              isLoading={isExporting}
+              variant="outline"
+              size="sm"
+            >
+              📦 一括PDFダウンロード
+            </Button>
+          </div>
+        )}
       </div>
 
       <Card>
@@ -186,6 +263,14 @@ export function OrdersTable({ orders, currentPage, totalPages, totalCount, curre
             <table className="w-full min-w-[800px]">
               <thead className="bg-gray-50 border-b">
                 <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                    <input
+                      type="checkbox"
+                      checked={selectedOrderIds.length === orders.length && orders.length > 0}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                    />
+                  </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap min-w-[120px]">
                     <button
                       onClick={() => handleSort('orderNumber')}
@@ -239,6 +324,14 @@ export function OrdersTable({ orders, currentPage, totalPages, totalCount, curre
               <tbody className="divide-y divide-gray-200">
                 {orders.map((order) => (
                   <tr key={order.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedOrderIds.includes(order.id)}
+                        onChange={(e) => handleSelectOrder(order.id, e.target.checked)}
+                        className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                      />
+                    </td>
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div>
                         <p className="text-sm font-medium text-gray-900">
