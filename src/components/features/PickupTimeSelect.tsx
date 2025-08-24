@@ -151,7 +151,7 @@ export function PickupTimeSelect({ onTimeChange }: PickupTimeSelectProps) {
           営業時間・受け取り時間について
         </h4>
         <ul className="text-xs text-yellow-700 space-y-1">
-          <li>• 月〜金: 9:00-16:30（11:00-13:00は受け取り不可）</li>
+          <li>• 月〜金: 9:00-16:30</li>
           <li>• 土: 8:00-12:00</li>
           <li>• 日祝: 定休日</li>
           <li>• 受け取り希望時間の2時間前まで注文可能</li>
