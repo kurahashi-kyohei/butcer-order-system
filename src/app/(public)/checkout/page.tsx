@@ -311,14 +311,17 @@ export default function CheckoutPage() {
                         <div className="font-medium">{item.productName}</div>
                         <div className="text-gray-600">
                           {item.quantityMethod === 'PIECE' && item.pieceDetails ? 
-                            `${item.pieceDetails.pieceGrams}g × ${item.pieceDetails.pieceCount}枚 × ${item.pieceDetails.packCount}パック = ${item.quantity}g` :
+                            item.pieceDetails.packCount && item.pieceDetails.packCount > 1 ?
+                              `${item.pieceDetails.pieceGrams}g×${item.pieceDetails.pieceCount}枚×${item.pieceDetails.packCount}パック` :
+                              `${item.pieceDetails.pieceGrams}g×${item.pieceDetails.pieceCount}枚` :
                           item.quantityMethod === 'WEIGHT' && item.pieceDetails?.packCount && item.pieceDetails.packCount > 1 ?
-                            `${item.quantity}g × ${item.pieceDetails.packCount}パック` :
+                            `${Math.round(item.quantity / item.pieceDetails.packCount)}g×${item.pieceDetails.packCount}パック` :
                           item.quantityMethod === 'PIECE_COUNT' && item.pieceDetails?.packCount && item.pieceDetails.packCount > 1 ?
-                            `${item.quantity}本 × ${item.pieceDetails.packCount}パック` :
+                            `${Math.round(item.quantity / item.pieceDetails.packCount)}本×${item.pieceDetails.packCount}パック` :
+                          item.quantityMethod === 'PACK' ?
+                            `${item.quantity}パック` :
                             `${item.quantity}${item.quantityMethod === 'WEIGHT' ? 'g' : 
-                              item.quantityMethod === 'PIECE' ? '枚' :
-                              item.quantityMethod === 'PACK' ? 'パック' : '本'}`
+                              item.quantityMethod === 'PIECE' ? '枚' : '本'}`
                           }
                           {item.selectedUsage && ` / ${item.selectedUsage}`}
                           {item.selectedFlavor && ` / ${item.selectedFlavor}`}
