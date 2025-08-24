@@ -21,9 +21,6 @@ export function Footer() {
               <p>月〜金: 9:00-16:30</p>
               <p>土: 8:00-12:00</p>
               <p>日祝: 定休日</p>
-              <p className="mt-2 text-red-400">
-                ※平日11:00-13:00は受け取り不可
-              </p>
             </div>
           </div>
           
@@ -39,7 +36,7 @@ export function Footer() {
         
         <div className="mt-8 pt-8 border-t border-gray-600">
           <p className="text-center text-sm text-gray-400">
-            © 2024 ブッチャー丸幸. All rights reserved.
+            © 2025 ブッチャー丸幸. All rights reserved.
           </p>
         </div>
       </div>
