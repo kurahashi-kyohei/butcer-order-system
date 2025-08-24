@@ -74,15 +74,6 @@ export async function POST(request: NextRequest) {
 
     // 各注文のPDFを生成してZIPに追加
     for (const order of orders) {
-      // デバッグ用ログ出力
-      console.log('Bulk PDF Generation Debug:', {
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        customerName: order.customerName,
-        customerNameType: typeof order.customerName,
-        customerNameLength: order.customerName?.length
-      })
-
       const html = generateOrderHTML(order)
       
       const page = await browser.newPage()
@@ -109,12 +100,6 @@ export async function POST(request: NextRequest) {
       }
       usedFilenames.add(filename)
 
-      console.log('Generated bulk filename:', { 
-        originalFilename,
-        finalFilename: filename, 
-        index: orders.indexOf(order),
-        isDuplicate: filename !== originalFilename 
-      })
 
       // ZIPにPDFファイルを追加
       zip.file(filename, pdfBuffer)
