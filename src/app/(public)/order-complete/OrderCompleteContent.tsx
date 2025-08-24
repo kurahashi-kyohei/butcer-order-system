@@ -49,16 +49,6 @@ export function OrderCompleteContent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!orderNumber) {
-      setError('注文番号が指定されていません')
-      setLoading(false)
-      return
-    }
-
-    fetchOrder()
-  }, [orderNumber, fetchOrder])
-
   const fetchOrder = useCallback(async () => {
     try {
       const response = await fetch(`/api/orders?orderNumber=${orderNumber}`)
@@ -74,6 +64,16 @@ export function OrderCompleteContent() {
       setLoading(false)
     }
   }, [orderNumber])
+
+  useEffect(() => {
+    if (!orderNumber) {
+      setError('注文番号が指定されていません')
+      setLoading(false)
+      return
+    }
+
+    fetchOrder()
+  }, [orderNumber, fetchOrder])
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('ja-JP', {
