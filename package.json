@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "prisma generate && prisma db push && next build",
-    "build:vercel": "cp prisma/schema.production.prisma prisma/schema.prisma && prisma generate && prisma db push --accept-data-loss && prisma db seed && next build",
+    "build": "prisma generate && prisma db push && prisma db seed && next build",
+    "build:vercel": "prisma generate && prisma db push && prisma db seed && next build",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
