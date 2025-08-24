@@ -82,13 +82,12 @@ export async function POST(request: NextRequest) {
 
       await page.close()
 
-      // ファイル名をサニタイズ
-      const sanitizedOrderNumber = order.orderNumber
-        .replace(/[^a-zA-Z0-9\-_]/g, '') // 英数字、ハイフン、アンダースコア以外を除去
-        .substring(0, 50) // 最大50文字に制限
+      // お客様名をベースにしたファイル名を生成
+      const customerName = order.customerName || 'お客様'
+      const filename = `${customerName}様ご注文表.pdf`
 
       // ZIPにPDFファイルを追加
-      zip.file(`order-${sanitizedOrderNumber}.pdf`, pdfBuffer)
+      zip.file(filename, pdfBuffer)
     }
 
     await browser.close()
