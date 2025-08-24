@@ -3,7 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { generateOrderHTML, PDF_CONFIG } from '@/lib/pdf-template'
-import puppeteer from 'puppeteer'
+import puppeteer from 'puppeteer-core'
+import chromium from '@sparticuz/chromium'
 import JSZip from 'jszip'
 
 export async function POST(request: NextRequest) {
@@ -52,10 +53,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Puppeteerを起動
+    // Puppeteerを起動 (Vercel環境対応)
     const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
     })
 
     // ZIPファイルを作成
