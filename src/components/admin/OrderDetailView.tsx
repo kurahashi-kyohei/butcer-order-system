@@ -229,7 +229,10 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
         const a = document.createElement('a')
         a.style.display = 'none'
         a.href = url
-        a.download = `order-${order.orderNumber}.pdf`
+        const sanitizedOrderNumber = order.orderNumber
+          .replace(/[^a-zA-Z0-9\-_]/g, '') // 英数字、ハイフン、アンダースコア以外を除去
+          .substring(0, 50) // 最大50文字に制限
+        a.download = `order-${sanitizedOrderNumber}.pdf`
         document.body.appendChild(a)
         a.click()
         window.URL.revokeObjectURL(url)

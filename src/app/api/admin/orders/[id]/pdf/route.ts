@@ -78,11 +78,16 @@ export async function GET(
 
     await browser.close()
 
+    // ファイル名をサニタイズ（不正な文字を除去）
+    const sanitizedOrderNumber = order.orderNumber
+      .replace(/[^a-zA-Z0-9\-_]/g, '') // 英数字、ハイフン、アンダースコア以外を除去
+      .substring(0, 50) // 最大50文字に制限
+
     // PDFファイルとしてレスポンス
     return new NextResponse(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="order-${order.orderNumber}.pdf"`
+        'Content-Disposition': `attachment; filename="order-${sanitizedOrderNumber}.pdf"`
       }
     })
 
