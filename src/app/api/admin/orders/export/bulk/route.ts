@@ -70,9 +70,19 @@ export async function POST(request: NextRequest) {
 
     // ZIPファイルを作成
     const zip = new JSZip()
+    const usedFilenames = new Set<string>()
 
     // 各注文のPDFを生成してZIPに追加
     for (const order of orders) {
+      // デバッグ用ログ出力
+      console.log('Bulk PDF Generation Debug:', {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        customerName: order.customerName,
+        customerNameType: typeof order.customerName,
+        customerNameLength: order.customerName?.length
+      })
+
       const html = generateOrderHTML(order)
       
       const page = await browser.newPage()
@@ -84,7 +94,24 @@ export async function POST(request: NextRequest) {
 
       // お客様名をベースにしたファイル名を生成
       const customerName = order.customerName || 'お客様'
-      const filename = `${customerName}様ご注文表.pdf`
+      let filename = `${customerName}様ご注文表.pdf`
+
+      // ファイル名の重複チェック
+      let counter = 1
+      const originalFilename = filename
+      while (usedFilenames.has(filename)) {
+        counter++
+        const nameWithoutExt = originalFilename.replace('.pdf', '')
+        filename = `${nameWithoutExt}_${counter}.pdf`
+      }
+      usedFilenames.add(filename)
+
+      console.log('Generated bulk filename:', { 
+        originalFilename,
+        finalFilename: filename, 
+        index: orders.indexOf(order),
+        isDuplicate: filename !== originalFilename 
+      })
 
       // ZIPにPDFファイルを追加
       zip.file(filename, pdfBuffer)

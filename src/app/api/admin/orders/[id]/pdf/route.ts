@@ -78,9 +78,21 @@ export async function GET(
 
     await browser.close()
 
+    // デバッグ用ログ出力
+    console.log('PDF Generation Debug:', {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
+      customerNameType: typeof order.customerName,
+      customerNameLength: order.customerName?.length,
+      customerNameCharCodes: order.customerName?.split('').map(char => ({ char, code: char.charCodeAt(0) }))
+    })
+
     // お客様名をベースにしたファイル名を生成
     const customerName = order.customerName || 'お客様'
     const filename = `${customerName}様ご注文表.pdf`
+    
+    console.log('Generated filename:', { filename, encodedLength: filename.length })
     
     // RFC 5987に準拠したUTF-8エンコードファイル名
     const encodedFilename = encodeURIComponent(filename)
