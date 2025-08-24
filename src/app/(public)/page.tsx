@@ -245,15 +245,15 @@ export default async function Home() {
               <CardContent className="space-y-4">
                 <div className="flex items-start">
                   <div className="w-2 h-2 bg-red-600 rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                  <p className="text-gray-600">受け取り希望日の前日までにご注文ください</p>
+                  <p className="text-gray-600">受け取り時間の2時間前までにご注文ください</p>
                 </div>
                 <div className="flex items-start">
                   <div className="w-2 h-2 bg-red-600 rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                  <p className="text-gray-600">営業時間内（9:00-18:00）にお越しください</p>
+                  <p className="text-gray-600">営業時間内（9:00-16:30）にお越しください</p>
                 </div>
                 <div className="flex items-start">
                   <div className="w-2 h-2 bg-red-600 rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                  <p className="text-gray-600">在庫状況により商品をご用意できない場合があります</p>
+                  <p className="text-gray-600">在庫状況により商品が不足する場合があります</p>
                 </div>
                 <div className="flex items-start">
                   <div className="w-2 h-2 bg-red-600 rounded-full mt-2 mr-3 flex-shrink-0"></div>

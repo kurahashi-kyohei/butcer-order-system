@@ -95,7 +95,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
     <>
       <AdminHeader />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">注文管理</h1>
           <p className="text-gray-600">注文の確認・ステータス更新を行えます</p>

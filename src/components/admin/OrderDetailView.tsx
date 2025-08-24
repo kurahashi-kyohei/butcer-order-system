@@ -229,7 +229,8 @@ export function OrderDetailView({ order }: OrderDetailViewProps) {
         const a = document.createElement('a')
         a.style.display = 'none'
         a.href = url
-        a.download = `order-${order.orderNumber}.pdf`
+        const customerName = order.customerName || 'お客様'
+        a.download = `${customerName}様ご注文表.pdf`
         document.body.appendChild(a)
         a.click()
         window.URL.revokeObjectURL(url)

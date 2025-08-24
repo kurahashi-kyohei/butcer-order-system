@@ -1,12 +1,32 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
+
+interface OrderItem {
+  id: string
+  quantity: number
+  price: number
+  subtotal: number
+  selectedMethod: string
+  pieceGrams?: number
+  pieceCount?: number
+  packCount?: number
+  selectedUsage?: string
+  selectedFlavor?: string
+  remarks?: string
+  product: {
+    name: string
+    unit: string
+    quantityMethod: string
+    priceType: string
+  }
+}
 
 interface Order {
   id: string
@@ -19,20 +39,7 @@ interface Order {
   totalAmount: number
   status: string
   createdAt: string
-  orderItems: Array<{
-    id: string
-    quantity: number
-    price: number
-    subtotal: number
-    selectedUsage?: string
-    selectedFlavor?: string
-    remarks?: string
-    product: {
-      name: string
-      unit: string
-      quantityMethod: string
-    }
-  }>
+  orderItems: OrderItem[]
 }
 
 export function OrderCompleteContent() {
@@ -42,17 +49,7 @@ export function OrderCompleteContent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!orderNumber) {
-      setError('注文番号が指定されていません')
-      setLoading(false)
-      return
-    }
-
-    fetchOrder()
-  }, [orderNumber])
-
-  const fetchOrder = async () => {
+  const fetchOrder = useCallback(async () => {
     try {
       const response = await fetch(`/api/orders?orderNumber=${orderNumber}`)
       if (!response.ok) {
@@ -66,7 +63,17 @@ export function OrderCompleteContent() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [orderNumber])
+
+  useEffect(() => {
+    if (!orderNumber) {
+      setError('注文番号が指定されていません')
+      setLoading(false)
+      return
+    }
+
+    fetchOrder()
+  }, [orderNumber, fetchOrder])
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('ja-JP', {
@@ -75,18 +82,47 @@ export function OrderCompleteContent() {
     }).format(price)
   }
 
-  const getQuantityUnit = (quantityMethod: string) => {
-    switch (quantityMethod) {
+  const isItemPriceUndetermined = (item: OrderItem) => {
+    if (item.subtotal === 0) return true
+    if (item.selectedMethod === 'PIECE') return true
+    if (item.selectedMethod === 'PIECE_COUNT' && item.product.unit !== '本') return true
+    return false
+  }
+
+  const isPriceUndetermined = (order: Order) => {
+    if (order.totalAmount === 0) return true
+    return order.orderItems.some(isItemPriceUndetermined)
+  }
+
+  const getSimpleQuantityDisplay = (item: OrderItem) => {
+    const method = item.selectedMethod || 'WEIGHT'
+    
+    switch (method) {
       case 'WEIGHT':
-        return 'g'
+        if (item.packCount && item.packCount > 1) {
+          const gramsPerPack = Math.round(item.quantity / item.packCount)
+          return `${gramsPerPack}g×${item.packCount}パック`
+        }
+        return `${item.quantity.toLocaleString()}g`
       case 'PIECE':
-        return '枚'
+        if (item.pieceGrams && item.pieceCount && item.packCount) {
+          if (item.packCount > 1) {
+            return `${item.pieceGrams}g×${item.pieceCount}枚×${item.packCount}パック`
+          } else {
+            return `${item.pieceGrams}g×${item.pieceCount}枚`
+          }
+        }
+        return `${item.quantity}枚`
       case 'PACK':
-        return 'パック'
+        return `${item.quantity}パック`
       case 'PIECE_COUNT':
-        return '本'
+        if (item.packCount && item.packCount > 1) {
+          const piecesPerPack = Math.round(item.quantity / item.packCount)
+          return `${piecesPerPack}本×${item.packCount}パック`
+        }
+        return `${item.quantity}本`
       default:
-        return '個'
+        return `${item.quantity}${item.product.unit || ''}`
     }
   }
 
@@ -202,46 +238,51 @@ export function OrderCompleteContent() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {order.orderItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex justify-between items-start border-b border-gray-200 pb-4 last:border-b-0 last:pb-0"
-                >
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900">
-                      {item.product.name}
-                    </h3>
-                    <div className="mt-1 text-sm text-gray-600 space-y-1">
-                      <div>
-                        数量: {item.quantity}{getQuantityUnit(item.product.quantityMethod)}
+              {order.orderItems.map((item) => {
+                const itemPriceUndetermined = isItemPriceUndetermined(item)
+                return (
+                  <div
+                    key={item.id}
+                    className="flex justify-between items-start border-b border-gray-200 pb-4 last:border-b-0 last:pb-0"
+                  >
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900">
+                        {item.product.name}
+                      </h3>
+                      <div className="mt-1 text-sm text-gray-600 space-y-1">
+                        <div>
+                          数量: {getSimpleQuantityDisplay(item)}
+                        </div>
+                        {item.selectedUsage && (
+                          <div>用途: {item.selectedUsage}</div>
+                        )}
+                        {item.selectedFlavor && (
+                          <div>味付け: {item.selectedFlavor}</div>
+                        )}
+                        {item.remarks && (
+                          <div>備考: {item.remarks}</div>
+                        )}
                       </div>
-                      {item.selectedUsage && (
-                        <div>用途: {item.selectedUsage}</div>
-                      )}
-                      {item.selectedFlavor && (
-                        <div>味付け: {item.selectedFlavor}</div>
-                      )}
-                      {item.remarks && (
-                        <div>備考: {item.remarks}</div>
-                      )}
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium text-gray-900">
+                        {itemPriceUndetermined ? '価格未定' : formatPrice(item.subtotal)}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {itemPriceUndetermined ? '価格未定' : `${formatPrice(item.price)} × ${item.quantity}`}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-medium text-gray-900">
-                      {formatPrice(item.subtotal)}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {formatPrice(item.price)} × {item.quantity}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
             
             <div className="border-t border-gray-200 pt-4 mt-4">
               <div className="flex justify-between items-center text-lg font-bold">
                 <span>合計金額</span>
-                <span className="text-red-600">{formatPrice(order.totalAmount)}</span>
+                <span className="text-red-600">
+                  {isPriceUndetermined(order) ? '価格未定' : formatPrice(order.totalAmount)}
+                </span>
               </div>
             </div>
           </CardContent>

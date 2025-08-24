@@ -44,7 +44,7 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
     <>
       <AdminHeader />
       
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
         <div className="mb-6 flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">注文詳細</h1>
