@@ -73,7 +73,11 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
         orderItems: {
           include: {
             product: {
-              select: { name: true }
+              select: { 
+                name: true,
+                unit: true,
+                quantityMethods: true
+              }
             }
           }
         }

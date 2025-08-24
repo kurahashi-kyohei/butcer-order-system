@@ -36,6 +36,7 @@ interface CartItemData {
   remarks?: string
   quantityMethod: 'WEIGHT' | 'PIECE' | 'PACK' | 'PIECE_COUNT'
   priceType: 'WEIGHT_BASED' | 'PACK'
+  isPriceUndetermined?: boolean
   pieceDetails?: {
     pieceGrams?: number
     pieceCount?: number
@@ -96,6 +97,7 @@ export default function CheckoutPage() {
                 remarks: item.remarks,
                 quantityMethod: item.selectedMethod || (Array.isArray(product.quantityMethods) ? product.quantityMethods[0] : 'WEIGHT'),
                 priceType: product.priceType,
+                isPriceUndetermined: item.isPriceUndetermined,
                 pieceDetails: item.pieceDetails,
               }
             }
@@ -157,6 +159,7 @@ export default function CheckoutPage() {
           selectedUsage: item.selectedUsage || undefined,
           selectedFlavor: item.selectedFlavor || undefined,
           remarks: item.remarks || undefined,
+          isPriceUndetermined: item.isPriceUndetermined,
         }))
       }
 
@@ -291,7 +294,8 @@ export default function CheckoutPage() {
                   quantity: item.quantity,
                   price: item.price,
                   priceType: item.priceType,
-                  subtotal: item.subtotal
+                  subtotal: item.subtotal,
+                  isPriceUndetermined: item.isPriceUndetermined
                 }))}
               />
 

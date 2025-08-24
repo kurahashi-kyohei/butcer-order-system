@@ -127,7 +127,7 @@ async function main() {
       categories: ['yakiniku'],
       usageOptionIds: `${yakinikuUsage?.id},${shabuUsage?.id},${otherUsage?.id}`,
       flavorOptionIds: `${jishaSpecialFlavor?.id},${shioFlavor?.id},${horumonFlavor?.id},${shiokoshoFlavor?.id},${nashiFlavor?.id}`,
-      quantityMethods: 'WEIGHT',
+      quantityMethods: 'PIECE_COUNT',
       hasRemarks: true,
       hasStock: true
     },
@@ -267,7 +267,7 @@ async function main() {
       categories: ['yakiniku'],
       usageOptionIds: `${yakinikuUsage?.id},${shabuUsage?.id},${otherUsage?.id}`,
       flavorOptionIds: `${jishaSpecialFlavor?.id},${shioFlavor?.id},${horumonFlavor?.id},${shiokoshoFlavor?.id},${nashiFlavor?.id}`,
-      quantityMethods: 'WEIGHT',
+      quantityMethods: 'PIECE_COUNT',
       hasRemarks: true,
       hasStock: true
     },
@@ -620,7 +620,7 @@ async function main() {
       categories: ['chicken'],
       usageOptionIds: `${yakinikuUsage?.id},${otherUsage?.id}`,
       flavorOptionIds: `${jishaSpecialFlavor?.id},${shioFlavor?.id},${horumonFlavor?.id},${shiokoshoFlavor?.id},${nashiFlavor?.id}`,
-      quantityMethods: 'WEIGHT,PIECE',
+      quantityMethods: 'PIECE',
       hasRemarks: true,
       hasStock: true
     },
@@ -634,7 +634,7 @@ async function main() {
       categories: ['chicken'],
       usageOptionIds: `${yakinikuUsage?.id},${otherUsage?.id}`,
       flavorOptionIds: `${jishaSpecialFlavor?.id},${shioFlavor?.id},${horumonFlavor?.id},${shiokoshoFlavor?.id},${nashiFlavor?.id}`,
-      quantityMethods: 'WEIGHT,PIECE',
+      quantityMethods: 'PIECE',
       hasRemarks: true,
       hasStock: true
     },
@@ -648,7 +648,7 @@ async function main() {
       categories: ['chicken'],
       usageOptionIds: `${yakinikuUsage?.id},${otherUsage?.id}`,
       flavorOptionIds: `${jishaSpecialFlavor?.id},${shioFlavor?.id},${horumonFlavor?.id},${shiokoshoFlavor?.id},${nashiFlavor?.id}`,
-      quantityMethods: 'WEIGHT,PIECE',
+      quantityMethods: 'PIECE_COUNT',
       hasRemarks: true,
       hasStock: true
     },
@@ -662,7 +662,7 @@ async function main() {
       categories: ['chicken'],
       usageOptionIds: '',
       flavorOptionIds: '',
-      quantityMethods: 'WEIGHT,PIECE',
+      quantityMethods: 'PIECE_COUNT',
       hasRemarks: true,
       hasStock: true
     },
@@ -676,7 +676,7 @@ async function main() {
       categories: ['chicken'],
       usageOptionIds: '',
       flavorOptionIds: '',
-      quantityMethods: 'WEIGHT,PIECE',
+      quantityMethods: 'PIECE_COUNT',
       hasRemarks: true,
       hasStock: true
     },
@@ -690,7 +690,7 @@ async function main() {
       categories: ['chicken'],
       usageOptionIds: '',
       flavorOptionIds: '',
-      quantityMethods: 'WEIGHT,PIECE',
+      quantityMethods: 'PIECE_COUNT',
       hasRemarks: true,
       hasStock: true
     },
@@ -929,7 +929,7 @@ async function main() {
     const { categories, ...productDataWithoutCategories } = productData
     const product = await prisma.product.upsert({
       where: { id: productData.id },
-      update: {},
+      update: productDataWithoutCategories,
       create: productDataWithoutCategories
     })
     

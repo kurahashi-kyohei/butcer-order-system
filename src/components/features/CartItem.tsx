@@ -14,6 +14,7 @@ interface CartItemData {
   remarks?: string
   quantityMethod: 'WEIGHT' | 'PIECE' | 'PACK' | 'PIECE_COUNT'
   priceType: 'WEIGHT_BASED' | 'PACK'
+  isPriceUndetermined?: boolean
   pieceDetails?: {
     pieceGrams?: number
     pieceCount?: number
@@ -115,11 +116,11 @@ export function CartItem({ item, onRemoveItem }: CartItemProps) {
         <div className="text-right">
           <div className="text-sm text-gray-600">
             <span>
-              合計: {formatPrice(item.subtotal)}
+              合計: {item.isPriceUndetermined ? '価格未定' : formatPrice(item.subtotal)}
             </span>
           </div>
           <div className="text-lg font-bold text-red-600">
-            {formatPrice(item.subtotal)}
+            {item.isPriceUndetermined ? '価格未定' : formatPrice(item.subtotal)}
           </div>
         </div>
       </div>

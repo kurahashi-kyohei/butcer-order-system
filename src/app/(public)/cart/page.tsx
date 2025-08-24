@@ -19,6 +19,7 @@ interface CartItemData {
   remarks?: string
   quantityMethod: 'WEIGHT' | 'PIECE' | 'PACK' | 'PIECE_COUNT'
   priceType: 'WEIGHT_BASED' | 'PACK'
+  isPriceUndetermined?: boolean
   pieceDetails?: {
     pieceGrams?: number
     pieceCount?: number
@@ -62,6 +63,7 @@ export default function CartPage() {
                   quantityMethod: item.selectedMethod || 
                     (Array.isArray(product.quantityMethods) ? product.quantityMethods[0] : 'WEIGHT'),
                   priceType: product.priceType,
+                  isPriceUndetermined: item.isPriceUndetermined,
                   pieceDetails: item.pieceDetails,
                 }
               }
@@ -99,6 +101,7 @@ export default function CartPage() {
       selectedUsage: item.selectedUsage,
       selectedFlavor: item.selectedFlavor,
       remarks: item.remarks,
+      isPriceUndetermined: item.isPriceUndetermined,
       pieceDetails: item.pieceDetails,
     }))
     sessionStorage.setItem('cart', JSON.stringify(storageItems))
@@ -204,7 +207,8 @@ export default function CartPage() {
                   quantity: item.quantity,
                   price: item.price,
                   priceType: item.priceType,
-                  subtotal: item.subtotal
+                  subtotal: item.subtotal,
+                  isPriceUndetermined: item.isPriceUndetermined
                 }))}
                 className="mb-6"
               />

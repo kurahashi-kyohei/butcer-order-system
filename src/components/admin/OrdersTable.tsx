@@ -14,8 +14,10 @@ interface OrderItem {
   selectedUsage?: string
   selectedFlavor?: string
   remarks?: string
+  selectedMethod?: string
   product: {
     name: string
+    unit?: string
   }
 }
 
@@ -47,6 +49,8 @@ interface OrdersTableProps {
 export function OrdersTable({ orders, currentPage, totalPages, totalCount, currentSort }: OrdersTableProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([])
+  const [isExporting, setIsExporting] = useState(false)
 
   const handleSort = (field: string) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -96,6 +100,23 @@ export function OrdersTable({ orders, currentPage, totalPages, totalCount, curre
     }).format(price)
   }
 
+  const isPriceUndetermined = (order: Order) => {
+    // 価格未定の判定: 
+    // 1. totalAmountが0の場合
+    // 2. または orderItemsに価格未定商品が含まれる場合
+    if (order.totalAmount === 0) {
+      return true
+    }
+    
+    // orderItemsで価格未定判定（PIECE選択、またはPIECE_COUNT + 100g単位）
+    return order.orderItems.some(item => {
+      if (item.subtotal === 0) return true
+      if (item.selectedMethod === 'PIECE') return true
+      if (item.selectedMethod === 'PIECE_COUNT' && item.product.unit !== '本') return true
+      return false
+    })
+  }
+
   const formatDateTime = (date: Date) => {
     return new Intl.DateTimeFormat('ja-JP', {
       year: 'numeric',
@@ -122,6 +143,64 @@ export function OrdersTable({ orders, currentPage, totalPages, totalCount, curre
       case 'COMPLETED': return '受け取り完了'
       case 'CANCELLED': return 'キャンセル'
       default: return status
+    }
+  }
+
+  const handleSelectOrder = (orderId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedOrderIds(prev => [...prev, orderId])
+    } else {
+      setSelectedOrderIds(prev => prev.filter(id => id !== orderId))
+    }
+  }
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedOrderIds(orders.map(order => order.id))
+    } else {
+      setSelectedOrderIds([])
+    }
+  }
+
+  const handleBulkExport = async () => {
+    if (selectedOrderIds.length === 0) {
+      alert('エクスポートする注文を選択してください')
+      return
+    }
+
+    setIsExporting(true)
+    
+    try {
+      const response = await fetch('/api/admin/orders/export/bulk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ orderIds: selectedOrderIds }),
+      })
+      
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.style.display = 'none'
+        a.href = url
+        a.download = `orders-${new Date().toISOString().split('T')[0]}.zip`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+        
+        // 選択をクリア
+        setSelectedOrderIds([])
+      } else {
+        alert('エクスポートに失敗しました')
+      }
+    } catch (error) {
+      console.error('Export error:', error)
+      alert('エクスポートに失敗しました')
+    } finally {
+      setIsExporting(false)
     }
   }
 
@@ -159,6 +238,23 @@ export function OrdersTable({ orders, currentPage, totalPages, totalCount, curre
         <p className="text-sm text-gray-600">
           {totalCount}件中 {Math.min((currentPage - 1) * 20 + 1, totalCount)}-{Math.min(currentPage * 20, totalCount)}件を表示
         </p>
+        
+        {selectedOrderIds.length > 0 && (
+          <div className="flex items-center space-x-4">
+            <span className="text-sm text-gray-600">
+              {selectedOrderIds.length}件選択中
+            </span>
+            <Button
+              onClick={handleBulkExport}
+              disabled={isExporting}
+              isLoading={isExporting}
+              variant="outline"
+              size="sm"
+            >
+              📦 一括PDFダウンロード
+            </Button>
+          </div>
+        )}
       </div>
 
       <Card>
@@ -167,6 +263,14 @@ export function OrdersTable({ orders, currentPage, totalPages, totalCount, curre
             <table className="w-full min-w-[800px]">
               <thead className="bg-gray-50 border-b">
                 <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                    <input
+                      type="checkbox"
+                      checked={selectedOrderIds.length === orders.length && orders.length > 0}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                    />
+                  </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap min-w-[120px]">
                     <button
                       onClick={() => handleSort('orderNumber')}
@@ -221,6 +325,14 @@ export function OrdersTable({ orders, currentPage, totalPages, totalCount, curre
                 {orders.map((order) => (
                   <tr key={order.id} className="hover:bg-gray-50">
                     <td className="px-4 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedOrderIds.includes(order.id)}
+                        onChange={(e) => handleSelectOrder(order.id, e.target.checked)}
+                        className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                      />
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <div>
                         <p className="text-sm font-medium text-gray-900">
                           {order.orderNumber}
@@ -258,7 +370,7 @@ export function OrdersTable({ orders, currentPage, totalPages, totalCount, curre
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
                       <p className="text-sm font-bold text-red-600">
-                        {formatPrice(order.totalAmount)}
+                        {isPriceUndetermined(order) ? '価格未定' : formatPrice(order.totalAmount)}
                       </p>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
