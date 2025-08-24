@@ -82,22 +82,16 @@ export function OrderCompleteContent() {
     }).format(price)
   }
 
-  const isPriceUndetermined = (order: Order) => {
-    if (order.totalAmount === 0) return true
-    
-    return order.orderItems.some((item: OrderItem) => {
-      if (item.subtotal === 0) return true
-      if (item.selectedMethod === 'PIECE') return true
-      if (item.selectedMethod === 'PIECE_COUNT' && item.product.unit !== '本') return true
-      return false
-    })
-  }
-
   const isItemPriceUndetermined = (item: OrderItem) => {
     if (item.subtotal === 0) return true
     if (item.selectedMethod === 'PIECE') return true
     if (item.selectedMethod === 'PIECE_COUNT' && item.product.unit !== '本') return true
     return false
+  }
+
+  const isPriceUndetermined = (order: Order) => {
+    if (order.totalAmount === 0) return true
+    return order.orderItems.some(isItemPriceUndetermined)
   }
 
   const getSimpleQuantityDisplay = (item: OrderItem) => {
@@ -244,40 +238,43 @@ export function OrderCompleteContent() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {order.orderItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex justify-between items-start border-b border-gray-200 pb-4 last:border-b-0 last:pb-0"
-                >
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900">
-                      {item.product.name}
-                    </h3>
-                    <div className="mt-1 text-sm text-gray-600 space-y-1">
-                      <div>
-                        数量: {getSimpleQuantityDisplay(item)}
+              {order.orderItems.map((item) => {
+                const itemPriceUndetermined = isItemPriceUndetermined(item)
+                return (
+                  <div
+                    key={item.id}
+                    className="flex justify-between items-start border-b border-gray-200 pb-4 last:border-b-0 last:pb-0"
+                  >
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900">
+                        {item.product.name}
+                      </h3>
+                      <div className="mt-1 text-sm text-gray-600 space-y-1">
+                        <div>
+                          数量: {getSimpleQuantityDisplay(item)}
+                        </div>
+                        {item.selectedUsage && (
+                          <div>用途: {item.selectedUsage}</div>
+                        )}
+                        {item.selectedFlavor && (
+                          <div>味付け: {item.selectedFlavor}</div>
+                        )}
+                        {item.remarks && (
+                          <div>備考: {item.remarks}</div>
+                        )}
                       </div>
-                      {item.selectedUsage && (
-                        <div>用途: {item.selectedUsage}</div>
-                      )}
-                      {item.selectedFlavor && (
-                        <div>味付け: {item.selectedFlavor}</div>
-                      )}
-                      {item.remarks && (
-                        <div>備考: {item.remarks}</div>
-                      )}
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium text-gray-900">
+                        {itemPriceUndetermined ? '価格未定' : formatPrice(item.subtotal)}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {itemPriceUndetermined ? '価格未定' : `${formatPrice(item.price)} × ${item.quantity}`}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-medium text-gray-900">
-                      {isItemPriceUndetermined(item) ? '価格未定' : formatPrice(item.subtotal)}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {isItemPriceUndetermined(item) ? '価格未定' : `${formatPrice(item.price)} × ${item.quantity}`}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
             
             <div className="border-t border-gray-200 pt-4 mt-4">
