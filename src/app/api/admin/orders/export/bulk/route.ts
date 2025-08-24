@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { generateOrderHTML, PDF_CONFIG } from '@/lib/pdf-template'
 import puppeteer from 'puppeteer-core'
+import puppeteerFull from 'puppeteer'
 import chromium from '@sparticuz/chromium'
 import JSZip from 'jszip'
 
@@ -53,13 +54,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Puppeteerを起動 (Vercel環境対応)
-    const browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
-    })
+    // Puppeteerを起動 (環境対応)
+    const isProduction = process.env.NODE_ENV === 'production'
+    const browser = isProduction
+      ? await puppeteer.launch({
+          args: chromium.args,
+          defaultViewport: chromium.defaultViewport,
+          executablePath: await chromium.executablePath(),
+          headless: chromium.headless,
+        })
+      : await puppeteerFull.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        })
 
     // ZIPファイルを作成
     const zip = new JSZip()
