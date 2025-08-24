@@ -181,13 +181,16 @@ export function generateOrderHTML(order: Order): string {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>注文書</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
       <style>
         @page {
           size: A4;
           margin: 2cm 1.5cm;
         }
         body {
-          font-family: 'MS Gothic', 'Yu Gothic', 'Hiragino Sans', sans-serif;
+          font-family: 'Noto Sans JP', 'MS Gothic', 'Yu Gothic', 'Hiragino Sans', sans-serif;
           margin: 0;
           padding: 0;
           font-size: 18px;

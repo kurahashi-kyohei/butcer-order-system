@@ -56,6 +56,8 @@ export async function GET(
 
     // PDF用のHTMLを生成
     const html = generateOrderHTML(order)
+    console.log('Generated HTML snippet (first 500 chars):', html.substring(0, 500))
+    console.log('Customer name in HTML:', order.customerName)
 
     // Puppeteerを使用してPDFを生成 (環境対応)
     const isProduction = process.env.NODE_ENV === 'production'
@@ -72,7 +74,10 @@ export async function GET(
         })
 
     const page = await browser.newPage()
-    await page.setContent(html, { waitUntil: 'networkidle0' })
+    await page.setContent(html, { waitUntil: 'networkidle2' })
+    
+    // フォントの読み込みを待つ
+    await page.evaluateHandle('document.fonts.ready')
     
     const pdfBuffer = await page.pdf(PDF_CONFIG)
 
