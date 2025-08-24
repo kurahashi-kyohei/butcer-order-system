@@ -3,7 +3,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { generateOrderHTML, PDF_CONFIG } from '@/lib/pdf-template'
-import puppeteer from 'puppeteer'
+import puppeteer from 'puppeteer-core'
+import puppeteerFull from 'puppeteer'
+import chromium from '@sparticuz/chromium'
 
 interface PageProps {
   params: { id: string }
@@ -23,9 +25,12 @@ export async function GET(
       )
     }
 
+    // paramsをawaitする (Next.js 15要件)
+    const { id } = await params
+
     // 注文データを取得
     const order = await prisma.order.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         orderItems: {
           include: {
@@ -52,24 +57,42 @@ export async function GET(
     // PDF用のHTMLを生成
     const html = generateOrderHTML(order)
 
-    // Puppeteerを使用してPDFを生成
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    })
+    // Puppeteerを使用してPDFを生成 (環境対応)
+    const isProduction = process.env.NODE_ENV === 'production'
+    const browser = isProduction
+      ? await puppeteer.launch({
+          args: chromium.args,
+          defaultViewport: chromium.defaultViewport,
+          executablePath: await chromium.executablePath(),
+          headless: chromium.headless,
+        })
+      : await puppeteerFull.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        })
 
     const page = await browser.newPage()
-    await page.setContent(html, { waitUntil: 'networkidle0' })
+    await page.setContent(html, { waitUntil: 'networkidle2' })
+    
+    // フォントの読み込みを待つ
+    await page.evaluateHandle('document.fonts.ready')
     
     const pdfBuffer = await page.pdf(PDF_CONFIG)
 
     await browser.close()
 
+    // お客様名をベースにしたファイル名を生成
+    const customerName = order.customerName || 'お客様'
+    const filename = `${customerName}様ご注文表.pdf`
+    
+    // RFC 5987に準拠したUTF-8エンコードファイル名
+    const encodedFilename = encodeURIComponent(filename)
+
     // PDFファイルとしてレスポンス
     return new NextResponse(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="order-${order.orderNumber}.pdf"`
+        'Content-Disposition': `attachment; filename*=UTF-8''${encodedFilename}`
       }
     })
 
