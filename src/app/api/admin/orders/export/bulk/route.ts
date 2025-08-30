@@ -76,37 +76,56 @@ export async function POST(request: NextRequest) {
     const zip = new JSZip()
     const usedFilenames = new Set<string>()
 
-    // 各注文のPDFを生成してZIPに追加
-    for (const order of orders) {
-      const html = generateOrderHTML(order)
-      
-      const page = await browser.newPage()
-      await page.setContent(html, { waitUntil: 'networkidle2' })
-      
-      // フォントの読み込みを待つ
-      await page.evaluateHandle('document.fonts.ready')
-      
-      const pdfBuffer = await page.pdf(PDF_CONFIG)
+    // 各注文のPDFを並列生成してZIPに追加（パフォーマンス最適化）
+    const concurrency = parseInt(process.env.PDF_GENERATION_CONCURRENCY || '3', 10) // 同時実行数を制限
+    const chunkSize = concurrency
+    const chunks = []
+    
+    // 注文を並列処理用のチャンクに分割
+    for (let i = 0; i < orders.length; i += chunkSize) {
+      chunks.push(orders.slice(i, i + chunkSize))
+    }
 
-      await page.close()
+    // 各チャンクを並列処理
+    for (const chunk of chunks) {
+      const chunkPdfResults = await Promise.all(
+        chunk.map(async (order) => {
+          const html = generateOrderHTML(order)
+          
+          const page = await browser.newPage()
+          try {
+            await page.setContent(html, { waitUntil: 'networkidle2' })
+            
+            // フォントの読み込みを待つ
+            await page.evaluateHandle('document.fonts.ready')
+            
+            const pdfBuffer = await page.pdf(PDF_CONFIG)
 
-      // お客様名をベースにしたファイル名を生成
-      const customerName = order.customerName || 'お客様'
-      let filename = `${customerName}様ご注文表.pdf`
+            return { order, pdfBuffer }
+          } finally {
+            await page.close()
+          }
+        })
+      )
 
-      // ファイル名の重複チェック
-      let counter = 1
-      const originalFilename = filename
-      while (usedFilenames.has(filename)) {
-        counter++
-        const nameWithoutExt = originalFilename.replace('.pdf', '')
-        filename = `${nameWithoutExt}_${counter}.pdf`
-      }
-      usedFilenames.add(filename)
+      // 結果をZIPに追加（ファイル名生成の競合状態を避けるため逐次処理）
+      chunkPdfResults.forEach(({ order, pdfBuffer }) => {
+        // お客様名をベースにしたファイル名を生成
+        const customerName = order.customerName || 'お客様'
+        let filename = `${customerName}様ご注文表.pdf`
 
+        // ファイル名の重複チェック
+        let counter = 1
+        const originalFilename = filename
+        while (usedFilenames.has(filename)) {
+          counter++
+          const nameWithoutExt = originalFilename.replace('.pdf', '')
+          filename = `${nameWithoutExt}_${counter}.pdf`
+        }
+        usedFilenames.add(filename)
 
-      // ZIPにPDFファイルを追加
-      zip.file(filename, pdfBuffer)
+        zip.file(filename, pdfBuffer)
+      })
     }
 
     await browser.close()

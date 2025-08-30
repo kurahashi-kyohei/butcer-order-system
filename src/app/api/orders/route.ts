@@ -42,9 +42,9 @@ export async function POST(request: NextRequest) {
     const validatedData = createOrderSchema.parse(body)
     console.log('Validated order data:', validatedData)
 
-    // トランザクション内で注文を作成
+    // トランザクション内で注文を作成（N+1問題を解決）
     const order = await prisma.$transaction(async (tx) => {
-      // 注文を作成
+      // 注文を作成し、必要な商品情報を同時に含めて取得
       const newOrder = await tx.order.create({
         data: {
           orderNumber: validatedData.orderNumber,
@@ -55,17 +55,8 @@ export async function POST(request: NextRequest) {
           pickupTime: validatedData.pickupTime,
           totalAmount: validatedData.totalAmount,
           status: 'PENDING',
-        },
-      })
-
-      // 注文アイテムを作成
-      console.log('Creating order items with data:', validatedData.items)
-      const orderItems = await Promise.all(
-        validatedData.items.map((item) => {
-          console.log('Creating order item:', item)
-          return tx.orderItem.create({
-            data: {
-              orderId: newOrder.id,
+          orderItems: {
+            create: validatedData.items.map((item) => ({
               productId: item.productId,
               quantity: item.quantity,
               price: item.price,
@@ -77,10 +68,22 @@ export async function POST(request: NextRequest) {
               usageOptionName: item.selectedUsage,
               flavorOptionName: item.selectedFlavor,
               remarks: item.remarks,
-            },
-          })
-        })
-      )
+            }))
+          }
+        },
+        include: {
+          orderItems: {
+            include: {
+              product: {
+                select: {
+                  name: true,
+                  quantityMethods: true
+                }
+              }
+            }
+          }
+        }
+      })
 
       // 在庫管理は現在のスキーマでは未実装のためコメントアウト
       // 将来的に在庫管理機能を追加する場合は、Productモデルにstockフィールドを追加してください
@@ -103,67 +106,45 @@ export async function POST(request: NextRequest) {
       )
       */
 
-      return {
-        ...newOrder,
-        orderItems,
+      return newOrder
+    })
+
+    // メール送信を並列実行（serverless環境対応）
+    const emailPromise = Promise.resolve().then(async () => {
+      try {
+        const emailData: OrderEmailData = {
+          customerName: order.customerName,
+          customerEmail: order.customerEmail,
+          orderNumber: order.orderNumber,
+          pickupDate: order.pickupDate,
+          pickupTime: order.pickupTime,
+          orderItems: order.orderItems.map(item => ({
+            product: {
+              name: item.product?.name || '',
+              quantityMethod: item.selectedMethod
+            },
+            quantity: item.quantity,
+            selectedUsage: item.usageOptionName || undefined,
+            selectedFlavor: item.flavorOptionName || undefined,
+            remarks: item.remarks || undefined
+          })),
+          totalAmount: order.totalAmount
+        }
+
+        await sendOrderCompletionEmail(emailData)
+        console.log('Order completion email sent successfully')
+        return { success: true }
+      } catch (emailError) {
+        console.error('Email sending failed for order:', order.orderNumber, emailError)
+        // TODO: Consider implementing retry logic or dead letter queue for failed emails
+        return { success: false, error: emailError }
       }
     })
 
-    // 注文完了メールを送信
-    try {
-      const emailData: OrderEmailData = {
-        customerName: order.customerName,
-        customerEmail: order.customerEmail,
-        orderNumber: order.orderNumber,
-        pickupDate: order.pickupDate,
-        pickupTime: order.pickupTime,
-        orderItems: order.orderItems.map(item => ({
-          product: {
-            name: '', // プロダクト名は別途取得が必要
-            quantityMethod: item.selectedMethod
-          },
-          quantity: item.quantity,
-          selectedUsage: item.usageOptionName || undefined,
-          selectedFlavor: item.flavorOptionName || undefined,
-          remarks: item.remarks || undefined
-        })),
-        totalAmount: order.totalAmount
-      }
-
-      // プロダクト情報を取得してメールデータに追加
-      const productsWithDetails = await Promise.all(
-        order.orderItems.map(async (item) => {
-          const product = await prisma.product.findUnique({
-            where: { id: item.productId },
-            select: { name: true, quantityMethods: true }
-          })
-          return {
-            ...item,
-            product: {
-              name: product?.name || '',
-              quantityMethod: item.selectedMethod || (product?.quantityMethods ? product.quantityMethods.split(',')[0] : 'WEIGHT')
-            }
-          }
-        })
-      )
-
-      const emailDataWithProducts: OrderEmailData = {
-        ...emailData,
-        orderItems: productsWithDetails.map(item => ({
-          product: item.product,
-          quantity: item.quantity,
-          selectedUsage: item.usageOptionName || undefined,
-          selectedFlavor: item.flavorOptionName || undefined,
-          remarks: item.remarks || undefined
-        }))
-      }
-
-      await sendOrderCompletionEmail(emailDataWithProducts)
-      console.log('Order completion email sent successfully')
-    } catch (emailError) {
-      console.error('Failed to send order completion email:', emailError)
-      // メール送信エラーは注文作成の成功に影響しないようにする
-    }
+    // メール送信は並列で実行（レスポンス待機せず）
+    emailPromise.catch((error) => {
+      console.error('Unhandled email promise error:', error)
+    })
 
     return NextResponse.json(order, { status: 201 })
   } catch (error) {
