@@ -5,10 +5,10 @@ import { writeFile, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
 import crypto from 'crypto'
+import { fileTypeFromBuffer } from 'file-type'
 
 const ALLOWED_TYPES = [
   'image/jpeg',
-  'image/jpg', 
   'image/png',
   'image/webp'
 ]
@@ -27,19 +27,11 @@ export async function POST(request: NextRequest) {
     }
 
     const formData = await request.formData()
-    const file = formData.get('image') as File
+    const file = formData.get('image')
     
-    if (!file) {
+    if (!(file instanceof File)) {
       return NextResponse.json(
         { error: '画像ファイルが選択されていません' },
-        { status: 400 }
-      )
-    }
-
-    // ファイルタイプのバリデーション
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: 'サポートされていないファイル形式です。JPEG、PNG、WebP形式のみ対応しています。' },
         { status: 400 }
       )
     }
@@ -54,6 +46,15 @@ export async function POST(request: NextRequest) {
 
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
+
+    // ファイル内容に基づくタイプ検証（セキュリティ強化）
+    const detectedType = await fileTypeFromBuffer(buffer)
+    if (!detectedType || !ALLOWED_TYPES.includes(detectedType.mime)) {
+      return NextResponse.json(
+        { error: 'サポートされていないファイル形式です。JPEG、PNG、WebP形式のみ対応しています。' },
+        { status: 400 }
+      )
+    }
 
     // ユニークなファイル名を生成
     const fileExtension = path.extname(file.name)

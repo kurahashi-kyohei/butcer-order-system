@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, ChangeEvent } from 'react'
+import { useState, useRef, useEffect, ChangeEvent } from 'react'
 import Image from 'next/image'
 import { Button } from './Button'
 
@@ -21,11 +21,19 @@ export function ImageUpload({
 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState<string>(value || '')
+  const [error, setError] = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    setPreview(value || '')
+  }, [value])
 
   const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
+
+    // エラー状態をクリア
+    setError('')
 
     // プレビュー用のローカルURL作成
     const previewUrl = URL.createObjectURL(file)
@@ -56,7 +64,8 @@ export function ImageUpload({
 
     } catch (error) {
       console.error('Upload error:', error)
-      alert(error instanceof Error ? error.message : 'アップロードに失敗しました')
+      const errorMessage = error instanceof Error ? error.message : 'アップロードに失敗しました'
+      setError(errorMessage)
       
       // エラーの場合はプレビューをクリア
       URL.revokeObjectURL(previewUrl)
@@ -71,6 +80,7 @@ export function ImageUpload({
       URL.revokeObjectURL(preview)
     }
     setPreview('')
+    setError('')
     onRemove()
     
     // ファイル入力をリセット
@@ -90,7 +100,7 @@ export function ImageUpload({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/jpg,image/png,image/webp"
+        accept="image/jpeg,image/png,image/webp"
         onChange={handleFileSelect}
         disabled={disabled || uploading}
         className="hidden"
@@ -131,6 +141,12 @@ export function ImageUpload({
           </div>
         )}
       </div>
+
+      {error && (
+        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
+          {error}
+        </div>
+      )}
 
       <p className="text-xs text-gray-500">
         対応形式: JPEG, PNG, WebP (最大5MB)
