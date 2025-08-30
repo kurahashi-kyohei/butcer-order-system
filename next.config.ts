@@ -10,16 +10,10 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true, // ビルド時のTypeScriptエラーを無視（本番では false に設定）
   },
-  // 本番環境での設定
-  ...(process.env.NODE_ENV === 'production' && {
-    output: 'standalone', // スタンドアロンビルド
-    compress: true,
-    poweredByHeader: false,
-    generateEtags: false,
-    httpAgentOptions: {
-      keepAlive: true,
-    }
-  })
+  // Netlify Functions対応
+  experimental: {
+    serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium']
+  }
 }
 
 module.exports = nextConfig

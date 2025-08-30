@@ -7,6 +7,10 @@ import puppeteer from 'puppeteer-core'
 import puppeteerFull from 'puppeteer'
 import chromium from '@sparticuz/chromium'
 
+// Netlifyでのchromium設定を最適化
+chromium.setHeadlessMode = true
+chromium.setGraphicsMode = false
+
 interface PageProps {
   params: { id: string }
 }

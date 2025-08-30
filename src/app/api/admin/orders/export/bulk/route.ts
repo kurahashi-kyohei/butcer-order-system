@@ -6,6 +6,10 @@ import { generateOrderHTML, PDF_CONFIG } from '@/lib/pdf-template'
 import puppeteer from 'puppeteer-core'
 import puppeteerFull from 'puppeteer'
 import chromium from '@sparticuz/chromium'
+
+// Netlifyでのchromium設定を最適化
+chromium.setHeadlessMode = true
+chromium.setGraphicsMode = false
 import JSZip from 'jszip'
 
 export async function POST(request: NextRequest) {

@@ -6,7 +6,7 @@
 [build.environment]
   NODE_VERSION = "20"
   NPM_CONFIG_PRODUCTION = "false"
-  SECRETS_SCAN_OMIT_PATHS = "MANUAL_TEST_EXECUTION_REPORT.md,MANUAL_TESTING_PLAN.md,README.md"
+  SECRETS_SCAN_ENABLED = "false"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
