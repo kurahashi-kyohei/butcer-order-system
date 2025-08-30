@@ -27,5 +27,5 @@ export default withAuth(
 )
 
 export const config = {
-  matcher: []  // 一時的にミドルウェアを無効化
+  matcher: ['/admin/:path*']
 }

@@ -2,8 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { validateOrigin, csrfError } from '@/lib/csrf-protection'
 
 export async function POST(request: NextRequest) {
+  // CSRF保護
+  if (!validateOrigin(request)) {
+    return csrfError();
+  }
+
   try {
     const session = await getServerSession(authOptions)
 

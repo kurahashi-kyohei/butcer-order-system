@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { CustomSelect } from '@/components/ui/CustomSelect'
+import { ImageUpload } from '@/components/ui/ImageUpload'
 
 interface Category {
   id: string
@@ -254,13 +255,14 @@ export function ProductCreateModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              商品画像URL
+              商品画像
             </label>
-            <Input
-              type="url"
+            <ImageUpload
               value={formData.imageUrl}
-              onChange={(e) => handleChange('imageUrl', e.target.value)}
-              placeholder="https://example.com/image.jpg"
+              onChange={(url) => handleChange('imageUrl', url)}
+              onRemove={() => handleChange('imageUrl', '')}
+              placeholder="商品画像をアップロード"
+              disabled={isSubmitting}
             />
           </div>
 
