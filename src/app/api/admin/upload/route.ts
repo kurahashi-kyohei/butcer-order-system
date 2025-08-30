@@ -6,6 +6,7 @@ import { existsSync } from 'fs'
 import path from 'path'
 import crypto from 'crypto'
 import { fileTypeFromBuffer } from 'file-type'
+import { validateOrigin, csrfError } from '@/lib/csrf-protection'
 
 const ALLOWED_TYPES = [
   'image/jpeg',
@@ -16,6 +17,11 @@ const ALLOWED_TYPES = [
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
 export async function POST(request: NextRequest) {
+  // CSRF保護
+  if (!validateOrigin(request)) {
+    return csrfError();
+  }
+
   try {
     const session = await getServerSession(authOptions)
 
@@ -56,11 +62,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // ユニークなファイル名を生成
-    const fileExtension = path.extname(file.name)
+    // セキュアなファイル名を生成（パストラバーサル対策）
     const uniqueId = crypto.randomUUID()
     const timestamp = Date.now()
-    const filename = `${timestamp}-${uniqueId}${fileExtension}`
+    // 検証済みのMIMEタイプから安全な拡張子を決定
+    const safeExtension = detectedType.ext === 'jpg' ? '.jpg' : `.${detectedType.ext}`
+    const filename = `${timestamp}-${uniqueId}${safeExtension}`
 
     // アップロード先のディレクトリを確保
     const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'products')
@@ -68,8 +75,15 @@ export async function POST(request: NextRequest) {
       await mkdir(uploadDir, { recursive: true })
     }
 
-    // ファイルを保存
-    const filePath = path.join(uploadDir, filename)
+    // パストラバーサル攻撃を防ぐためのファイルパス検証
+    const filePath = path.join(uploadDir, path.basename(filename))
+    // 生成されたパスがアップロードディレクトリ内にあることを確認
+    if (!filePath.startsWith(uploadDir)) {
+      return NextResponse.json(
+        { error: 'Invalid file path' },
+        { status: 400 }
+      )
+    }
     await writeFile(filePath, buffer)
 
     // 公開URLを生成

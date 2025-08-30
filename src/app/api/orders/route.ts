@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { sendOrderCompletionEmail, type OrderEmailData } from '@/lib/email'
+import { validateOrigin, csrfError } from '@/lib/csrf-protection'
 
 const orderItemSchema = z.object({
   productId: z.string(),
@@ -30,6 +31,11 @@ const createOrderSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  // CSRF保護
+  if (!validateOrigin(request)) {
+    return csrfError();
+  }
+
   try {
     const body = await request.json()
     console.log('Received order data:', body)
