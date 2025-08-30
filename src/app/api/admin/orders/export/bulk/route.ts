@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     const usedFilenames = new Set<string>()
 
     // 各注文のPDFを並列生成してZIPに追加（パフォーマンス最適化）
-    const concurrency = 3 // 同時実行数を制限
+    const concurrency = parseInt(process.env.PDF_GENERATION_CONCURRENCY || '3', 10) // 同時実行数を制限
     const chunkSize = concurrency
     const chunks = []
     
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 
     // 各チャンクを並列処理
     for (const chunk of chunks) {
-      const chunkResults = await Promise.all(
+      const chunkPdfResults = await Promise.all(
         chunk.map(async (order) => {
           const html = generateOrderHTML(order)
           
@@ -101,29 +101,29 @@ export async function POST(request: NextRequest) {
             
             const pdfBuffer = await page.pdf(PDF_CONFIG)
 
-            // お客様名をベースにしたファイル名を生成
-            const customerName = order.customerName || 'お客様'
-            let filename = `${customerName}様ご注文表.pdf`
-
-            // ファイル名の重複チェック
-            let counter = 1
-            const originalFilename = filename
-            while (usedFilenames.has(filename)) {
-              counter++
-              const nameWithoutExt = originalFilename.replace('.pdf', '')
-              filename = `${nameWithoutExt}_${counter}.pdf`
-            }
-            usedFilenames.add(filename)
-
-            return { filename, pdfBuffer }
+            return { order, pdfBuffer }
           } finally {
             await page.close()
           }
         })
       )
 
-      // 結果をZIPに追加
-      chunkResults.forEach(({ filename, pdfBuffer }) => {
+      // 結果をZIPに追加（ファイル名生成の競合状態を避けるため逐次処理）
+      chunkPdfResults.forEach(({ order, pdfBuffer }) => {
+        // お客様名をベースにしたファイル名を生成
+        const customerName = order.customerName || 'お客様'
+        let filename = `${customerName}様ご注文表.pdf`
+
+        // ファイル名の重複チェック
+        let counter = 1
+        const originalFilename = filename
+        while (usedFilenames.has(filename)) {
+          counter++
+          const nameWithoutExt = originalFilename.replace('.pdf', '')
+          filename = `${nameWithoutExt}_${counter}.pdf`
+        }
+        usedFilenames.add(filename)
+
         zip.file(filename, pdfBuffer)
       })
     }

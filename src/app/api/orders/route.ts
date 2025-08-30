@@ -109,11 +109,8 @@ export async function POST(request: NextRequest) {
       return newOrder
     })
 
-    // レスポンスを即座に返す
-    const response = NextResponse.json(order, { status: 201 })
-
-    // バックグラウンドでメール送信を実行（非同期化）
-    setImmediate(async () => {
+    // メール送信を並列実行（serverless環境対応）
+    const emailPromise = Promise.resolve().then(async () => {
       try {
         const emailData: OrderEmailData = {
           customerName: order.customerName,
@@ -136,13 +133,20 @@ export async function POST(request: NextRequest) {
 
         await sendOrderCompletionEmail(emailData)
         console.log('Order completion email sent successfully')
+        return { success: true }
       } catch (emailError) {
-        console.error('Background email sending failed:', emailError)
-        // バックグラウンドでのメール送信エラーはログのみ記録
+        console.error('Email sending failed for order:', order.orderNumber, emailError)
+        // TODO: Consider implementing retry logic or dead letter queue for failed emails
+        return { success: false, error: emailError }
       }
     })
 
-    return response
+    // メール送信は並列で実行（レスポンス待機せず）
+    emailPromise.catch((error) => {
+      console.error('Unhandled email promise error:', error)
+    })
+
+    return NextResponse.json(order, { status: 201 })
   } catch (error) {
     console.error('Error creating order:', error)
     
