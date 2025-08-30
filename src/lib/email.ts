@@ -23,11 +23,11 @@ export interface OrderEmailData {
 
 // メール送信設定
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  host: process.env.SMTP_HOST,
   port: parseInt(process.env.SMTP_PORT || '587'),
   secure: false, // true for 465, false for other ports
   auth: {
-    user: process.env.SMTP_USER || 'admin@butcher-maruko.com',
+    user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASSWORD
   }
 })
@@ -112,7 +112,7 @@ export const sendOrderCompletionEmail = async (orderData: OrderEmailData): Promi
     console.log('Email content generated:', emailContent.substring(0, 100) + '...')
     
     const mailOptions = {
-      from: 'admin@butcher-maruko.com',
+      from: process.env.SMTP_USER,
       to: orderData.customerEmail,
       subject: `【ブッチャー丸幸】ご注文ありがとうございます（注文番号: ${orderData.orderNumber}）`,
       text: emailContent
